@@ -400,8 +400,13 @@
         let socket;
         let devices = [];
         
+        // API Configuration - works in both development and production
+        const API_BASE_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:3001' 
+            : window.location.origin;
+        
         function initSocket() {
-            socket = io('http://localhost:3001', {
+            socket = io(API_BASE_URL, {
                 transports: ['websocket', 'polling'],
                 reconnection: true,
                 reconnectionAttempts: 10,

@@ -922,8 +922,13 @@
             { id: 'takeCameraPhoto', label: 'Camera', color: '#84cc16', icon: 'M23 7l-7 5 7 5V7z|M14 5H3a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z' }
         ];
         
+        // API Configuration - works in both development and production
+        const API_BASE_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:3001' 
+            : window.location.origin;
+        
         function initSocket() {
-            socket = io('http://localhost:3001', {
+            socket = io(API_BASE_URL, {
                 transports: ['websocket', 'polling'],
                 reconnection: true
             });
