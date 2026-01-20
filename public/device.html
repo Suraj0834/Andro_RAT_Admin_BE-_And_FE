@@ -2672,7 +2672,7 @@
             console.log('Current deviceData.keylog:', deviceData.keylog);
             
             // Fetch test data from API
-            fetch('http://localhost:3001/api/test/keylog-sample')
+            fetch(`${API_BASE_URL}/api/test/keylog-sample`)
                 .then(response => {
                     console.log('Response received:', response.status);
                     return response.json();
@@ -2699,7 +2699,7 @@
                 })
                 .catch(error => {
                     console.error('Error loading test data:', error);
-                    alert('❌ Failed to load test data.\n\nError: ' + error.message + '\n\nMake sure server is running on port 3001.');
+                    alert('❌ Failed to load test data.\n\nError: ' + error.message + '\n\nMake sure server is running.');
                 });
         }
         
