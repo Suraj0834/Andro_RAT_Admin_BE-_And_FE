@@ -373,6 +373,7 @@ io.on('connection', (socket) => {
                 // Send as JSONArray format that Android expects
                 botSocket.emit('commands', [androidCommand]);
                 log('success', `Command ${command} sent to ${targetBot.device || targetBot.model}${params.cameraType ? ' ('+params.cameraType+' camera)' : ''}${params.duration ? ' ('+params.duration+'s)' : ''}`);
+                log('info', `Command details: ${JSON.stringify(androidCommand)}`);
             } else {
                 log('error', `Unknown command: ${command}`);
                 socket.emit('commandError', { error: 'Unknown command' });
