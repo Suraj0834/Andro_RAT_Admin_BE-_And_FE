@@ -2253,20 +2253,33 @@
             if (socket && currentDevice) {
                 showProgress('Downloading full quality image...');
                 
-                // Listen for full quality image response
-                socket.once('fullQualityImage', (data) => {
-                    hideProgress();
+                // Listen for full quality image response (with timeout cleanup)
+                const downloadHandler = (data) => {
                     if (data.uniqueId === currentDevice.uniqueId || data.uniqueId === currentDevice.uid) {
-                        // Download the full quality image
-                        const link = document.createElement('a');
-                        link.href = 'data:image/jpeg;base64,' + data.imageData;
-                        link.download = data.fileName || photo.name || `photo_${index}.jpg`;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        showSuccess('High quality image downloaded!');
+                        hideProgress();
+                        try {
+                            // Download the full quality image
+                            const link = document.createElement('a');
+                            link.href = 'data:image/jpeg;base64,' + data.imageData;
+                            link.download = data.fileName || photo.name || `photo_${index}.jpg`;
+                            link.style.display = 'none';
+                            document.body.appendChild(link);
+                            link.click();
+                            
+                            // Clean up after a short delay
+                            setTimeout(() => {
+                                document.body.removeChild(link);
+                            }, 100);
+                            
+                            showSuccess('High quality image downloaded!');
+                        } catch (e) {
+                            console.error('Download error:', e);
+                            alert('Download failed. Please try again.');
+                        }
                     }
-                });
+                };
+                
+                socket.once('fullQualityImage', downloadHandler);
                 
                 // Request full quality image
                 socket.emit('adminCommand', {
@@ -2275,16 +2288,28 @@
                     imagePath: photo.path
                 });
                 
-                // Timeout after 30 seconds
+                // Timeout after 30 seconds and clean up listener
                 setTimeout(() => {
+                    socket.off('fullQualityImage', downloadHandler);
                     hideProgress();
                 }, 30000);
             } else {
                 // Fallback to thumbnail if no connection
-                const link = document.createElement('a');
-                link.href = 'data:image/jpeg;base64,' + photo.image64;
-                link.download = photo.name || `photo_${index}.jpg`;
-                link.click();
+                try {
+                    const link = document.createElement('a');
+                    link.href = 'data:image/jpeg;base64,' + photo.image64;
+                    link.download = photo.name || `photo_${index}.jpg`;
+                    link.style.display = 'none';
+                    document.body.appendChild(link);
+                    link.click();
+                    
+                    setTimeout(() => {
+                        document.body.removeChild(link);
+                    }, 100);
+                } catch (e) {
+                    console.error('Download error:', e);
+                    alert('Download failed. Please try again.');
+                }
             }
         }
         
