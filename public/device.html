@@ -1259,11 +1259,18 @@
                     console.log('File download received:', data.fileName);
                     hideProgress();
                     if (data.fileData) {
-                        // Create download link
+                        // Create download link with proper handling
                         const link = document.createElement('a');
                         link.href = 'data:' + (data.mimeType || 'application/octet-stream') + ';base64,' + data.fileData;
                         link.download = data.fileName;
+                        document.body.appendChild(link);
                         link.click();
+                        document.body.removeChild(link);
+                        
+                        // Show success message
+                        alert(`✅ Downloaded: ${data.fileName}\n\nFile size: ${(data.fileSize / 1024).toFixed(2)} KB\n\nCheck your browser's download folder.`);
+                    } else {
+                        alert('❌ Failed to download file. No data received.');
                     }
                 }
             });
@@ -1365,7 +1372,10 @@
             };
             
             if (tabMap[commandId]) {
-                deviceData[tabMap[commandId]] = commandId === 'getInstalledApps' || commandId === 'getPhotos' ? [] : null;
+                // Only initialize as empty array for apps and photos, don't clear existing data
+                if (!deviceData[tabMap[commandId]]) {
+                    deviceData[tabMap[commandId]] = commandId === 'getInstalledApps' || commandId === 'getPhotos' ? [] : null;
+                }
                 setActiveTab(tabMap[commandId]);
             }
             
