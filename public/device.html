@@ -1601,7 +1601,7 @@
                     content.innerHTML = contacts.map(contact => `
                         <div class="data-item">
                             <strong>${contact.name || 'Unknown'}</strong>
-                            <p style="color: #9ca3af; margin-top: 4px;">${Array.isArray(contact.phoneNumbers) ? contact.phoneNumbers.join(', ') : (contact.phoneNumbers || contact.phone || contact.number || 'No number')}</p>
+                            <p style="color: #9ca3af; margin-top: 4px;">${Array.isArray(contact.phoneNo) ? contact.phoneNo.join(', ') : (contact.phoneNo || contact.phoneNumbers || contact.phone || contact.number || 'No number')}</p>
                         </div>
                     `).join('') || '<div class="empty-data">No contacts</div>';
                     break;
