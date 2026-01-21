@@ -1558,23 +1558,40 @@
                     content.innerHTML = smsData.map(sms => `
                         <div class="data-item">
                             <div class="data-item-header">
-                                <strong>${sms.address || sms.number || 'Unknown'}</strong>
+                                <strong>${sms.contactName || sms.address || sms.number || 'Unknown'}</strong>
                                 <span>${sms.date || ''}</span>
                             </div>
-                            <p>${sms.body || sms.message || 'No content'}</p>
+                            <p style="color: #9ca3af; font-size: 13px;">${sms.address || sms.number || ''}</p>
+                            <p style="margin-top: 8px;">${sms.body || sms.message || 'No content'}</p>
                         </div>
                     `).join('') || '<div class="empty-data">No SMS data</div>';
                     break;
                     
                 case 'calls':
                     const callData = Array.isArray(data) ? data : [];
+                    const getCallTypeColor = (type) => {
+                        if (type === '1' || type === 'incoming') return '#10b981';
+                        if (type === '2' || type === 'outgoing') return '#3b82f6';
+                        if (type === '3' || type === 'missed') return '#ef4444';
+                        return '#6b7280';
+                    };
+                    const getCallTypeText = (type) => {
+                        if (type === '1') return 'Incoming';
+                        if (type === '2') return 'Outgoing';
+                        if (type === '3') return 'Missed';
+                        if (type === '4') return 'Voicemail';
+                        if (type === '5') return 'Rejected';
+                        if (type === '6') return 'Blocked';
+                        return type || 'Unknown';
+                    };
                     content.innerHTML = callData.map(call => `
                         <div class="data-item">
                             <div class="data-item-header">
-                                <strong>${call.number || 'Unknown'}</strong>
-                                <span style="color: ${call.type === 'incoming' ? '#10b981' : call.type === 'outgoing' ? '#3b82f6' : '#ef4444'}">${call.type || 'Unknown'}</span>
+                                <strong>${call.name && call.name !== '<unknown>' ? call.name : (call.number || 'Unknown')}</strong>
+                                <span style="color: ${getCallTypeColor(call.type)}">${getCallTypeText(call.type)}</span>
                             </div>
-                            <p>Duration: ${call.duration || 0}s | ${call.date || ''}</p>
+                            <p style="color: #9ca3af; font-size: 13px;">${call.number || ''}</p>
+                            <p style="margin-top: 4px;">Duration: ${call.duration || '00:00:00'} | ${call.date || ''}</p>
                         </div>
                     `).join('') || '<div class="empty-data">No call data</div>';
                     break;
@@ -1584,7 +1601,7 @@
                     content.innerHTML = contacts.map(contact => `
                         <div class="data-item">
                             <strong>${contact.name || 'Unknown'}</strong>
-                            <p>${contact.phone || contact.number || 'No number'}</p>
+                            <p style="color: #9ca3af; margin-top: 4px;">${Array.isArray(contact.phoneNumbers) ? contact.phoneNumbers.join(', ') : (contact.phoneNumbers || contact.phone || contact.number || 'No number')}</p>
                         </div>
                     `).join('') || '<div class="empty-data">No contacts</div>';
                     break;
