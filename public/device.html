@@ -2248,10 +2248,44 @@
             if (index >= photos.length) return;
             
             const photo = photos[index];
-            const link = document.createElement('a');
-            link.href = 'data:image/jpeg;base64,' + photo.image64;
-            link.download = photo.name || `photo_${index}.jpg`;
-            link.click();
+            
+            // Request full quality image from Android device
+            if (socket && currentDevice) {
+                showProgress('Downloading full quality image...');
+                
+                // Listen for full quality image response
+                socket.once('fullQualityImage', (data) => {
+                    hideProgress();
+                    if (data.uniqueId === currentDevice.uniqueId || data.uniqueId === currentDevice.uid) {
+                        // Download the full quality image
+                        const link = document.createElement('a');
+                        link.href = 'data:image/jpeg;base64,' + data.imageData;
+                        link.download = data.fileName || photo.name || `photo_${index}.jpg`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        showSuccess('High quality image downloaded!');
+                    }
+                });
+                
+                // Request full quality image
+                socket.emit('adminCommand', {
+                    command: 'downloadImage',
+                    targetUniqueId: currentDevice.uniqueId || currentDevice.uid,
+                    imagePath: photo.path
+                });
+                
+                // Timeout after 30 seconds
+                setTimeout(() => {
+                    hideProgress();
+                }, 30000);
+            } else {
+                // Fallback to thumbnail if no connection
+                const link = document.createElement('a');
+                link.href = 'data:image/jpeg;base64,' + photo.image64;
+                link.download = photo.name || `photo_${index}.jpg`;
+                link.click();
+            }
         }
         
         // File operations

